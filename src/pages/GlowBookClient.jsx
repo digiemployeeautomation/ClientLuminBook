@@ -1785,6 +1785,15 @@ export default function LuminBookClient() {
 
   // Auth gate
   if(!authChecked) return(<div style={{minHeight:'100vh',background:BG,display:'flex',alignItems:'center',justifyContent:'center'}}><style>{css}</style><div style={{display:'flex',gap:6}}>{[0,1,2].map(i=><div key={i} style={{width:8,height:8,borderRadius:4,background:ACCENT,animation:`pulse 1.2s ease ${i*.2}s infinite`}}/>)}</div></div>);
+
+  // Password recovery — must render before other guards
+  if(showResetPassword) return(
+    <div style={{minHeight:'100vh',background:BG,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+      <style>{css}</style>
+      <ResetPasswordForm onDone={()=>setShowResetPassword(false)}/>
+    </div>
+  );
+
   if(!authUser) return <AuthScreen onAuth={u=>setAuthUser(u)}/>;
   if(loading) return(<div style={{minHeight:'100vh',background:BG}}><style>{css}</style><div style={{maxWidth:600,margin:'0 auto',padding:'24px 16px'}}>
     <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:28}}><Skeleton w={120} h={24}/><Skeleton w={36} h={36} r={18}/></div>
@@ -1807,9 +1816,6 @@ export default function LuminBookClient() {
   return(
     <>
       <style>{css}</style>
-      {showResetPassword&&<div style={{position:'fixed',inset:0,zIndex:3000,background:'rgba(0,0,0,.5)',backdropFilter:'blur(8px)',display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
-        <ResetPasswordForm onDone={()=>setShowResetPassword(false)}/>
-      </div>}
       {isOffline&&<div role="alert" style={{position:'fixed',top:0,left:0,right:0,zIndex:2100,background:'#c62828',color:'#fff',textAlign:'center',padding:'8px 16px',fontSize:13,fontWeight:600,display:'flex',alignItems:'center',justifyContent:'center',gap:6}}><Icon name="xCircle" size={14} color="#fff"/>You're offline — check your connection</div>}
       <AppShell page={page} setPage={pg=>{setNavHistory([]);setPage(pg)}} client={client} unreadCount={unreadCount} onNotifClick={()=>setShowNotifs(true)} onLogout={handleLogout} bp={bp}>
         <div key={page} className="page-in" role="main">{pages[page]||pages.home}</div>
