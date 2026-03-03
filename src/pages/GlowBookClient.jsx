@@ -1471,6 +1471,29 @@ export default function LuminBookClient() {
     })();
   }, [authChecked,authUser]);
 
+  // ---- URL & DEEP LINK HELPERS ----
+  const getPageUrl = useCallback((pg, data) => {
+    if(pg === 'salon' && data?.branch) return '/' + (data.branch.booking_slug || data.branch.id);
+    if(pg === 'booking') return '/book';
+    if(pg === 'explore') return '/explore';
+    if(pg === 'bookings') return '/bookings';
+    if(pg === 'profile') return '/profile';
+    return '/';
+  }, []);
+
+  const resolveUrlToPage = useCallback((pathname) => {
+    const path = pathname.replace(/^\/+|\/+$/g,'').toLowerCase();
+    if(!path || path === 'index.html') return { pg: 'home' };
+    if(path === 'explore') return { pg: 'explore' };
+    if(path === 'bookings') return { pg: 'bookings' };
+    if(path === 'profile') return { pg: 'profile' };
+    if(path === 'book') return { pg: 'booking' };
+    // Try to resolve as a salon slug
+    const match = branches.find(b => b.booking_slug && (b.booking_slug === path || b.booking_slug === path.replace(/-/g,'')));
+    if(match) return { pg: 'salon', branch: match };
+    return { pg: 'home' };
+  }, [branches]);
+
   // ---- DEEP LINK: luminbook.app/business-slug → go straight to business page ----
   useEffect(() => {
     if(loading || deepLinkHandled.current || !branches.length) return;
@@ -1559,28 +1582,7 @@ export default function LuminBookClient() {
     setReminders(upcomingBookings.filter(b=>{const dt=new Date(`${b.booking_date}T${b.booking_time||'09:00'}`);return(dt-now)/3600000>0&&(dt-now)/3600000<=24}).map(b=>({...b,hoursUntil:Math.round((new Date(`${b.booking_date}T${b.booking_time||'09:00'}`)-new Date())/3600000)})));
   }, [upcomingBookings.length]);
 
-  // ---- URL & DEEP LINK HELPERS ----
-  const getPageUrl = useCallback((pg, data) => {
-    if(pg === 'salon' && data?.branch) return '/' + (data.branch.booking_slug || data.branch.id);
-    if(pg === 'booking') return '/book';
-    if(pg === 'explore') return '/explore';
-    if(pg === 'bookings') return '/bookings';
-    if(pg === 'profile') return '/profile';
-    return '/';
-  }, []);
 
-  const resolveUrlToPage = useCallback((pathname) => {
-    const path = pathname.replace(/^\/+|\/+$/g,'').toLowerCase();
-    if(!path || path === 'index.html') return { pg: 'home' };
-    if(path === 'explore') return { pg: 'explore' };
-    if(path === 'bookings') return { pg: 'bookings' };
-    if(path === 'profile') return { pg: 'profile' };
-    if(path === 'book') return { pg: 'booking' };
-    // Try to resolve as a salon slug
-    const match = branches.find(b => b.booking_slug && (b.booking_slug === path || b.booking_slug === path.replace(/-/g,'')));
-    if(match) return { pg: 'salon', branch: match };
-    return { pg: 'home' };
-  }, [branches]);
 
   const navigate = (pg,data) => {
     setNavHistory(h=>[...h,page]);
