@@ -28,7 +28,7 @@ const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const fmtDate = d => { if(!d) return '—'; const dt = new Date(d + 'T00:00:00'); return `${DAYS[dt.getDay()]}, ${dt.getDate()} ${MONTHS[dt.getMonth()]}`; };
 const fmtTime = t => { if(!t) return '—'; const [h,m] = t.split(':'); const hr = +h; return `${hr > 12 ? hr-12 : hr || 12}:${m} ${hr >= 12 ? 'PM' : 'AM'}`; };
-const todayStr = () => new Date().toISOString().slice(0, 10);
+const todayStr = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
 const fmtK = v => { const n = parseFloat(v) || 0; return 'K' + n.toLocaleString('en-ZM', { minimumFractionDigits: 0, maximumFractionDigits: 0 }); };
 const isValidZambianPhone = (phone) => { if (!phone) return false; const clean = phone.replace(/[\s\-()]/g, ''); return /^(?:\+?260|0)[79]\d{8}$/.test(clean); };
 
@@ -239,9 +239,13 @@ const Toggle = ({value,onChange}) => <div onClick={onChange} style={{width:44,he
 
 const NAV_ITEMS = [{id:'home',icon:'home',label:'Home'},{id:'explore',icon:'search',label:'Explore'},{id:'bookings',icon:'calendar',label:'Bookings'},{id:'profile',icon:'user',label:'Profile'}];
 
-function AppShell({page,setPage,children,client,unreadCount,onNotifClick,onLogout,bp}) {
+function AppShell({page,setPage,children,client,unreadCount,onNotifClick,onLogout,bp,onNavTo}) {
   const [drawerOpen,setDrawerOpen] = useState(false);
-  const navTo = id => {setPage(id);setDrawerOpen(false)};
+  const navTo = id => {
+    if(onNavTo) onNavTo(id);
+    else setPage(id);
+    setDrawerOpen(false);
+  };
 
   const Sidebar = () => (
     <aside style={{position:'fixed',top:0,left:0,bottom:0,width:SIDEBAR_W,background:CARD,borderRight:`1px solid ${BORDER}`,display:'flex',flexDirection:'column',zIndex:100,overflowY:'auto'}}>
@@ -343,7 +347,7 @@ function AuthScreen({onAuth}) {
     if(password.length<6)return setError('Password must be at least 6 characters.');
     if(phone&&!isValidZambianPhone(phone))return setError('Please enter a valid Zambian phone number (e.g. 0971234567) or leave it blank.');
     setSubmitting(true);setError('');
-    const{data,error:err}=await supabase.auth.signUp({email,password,options:{data:{name,phone},emailRedirectTo:window.location.origin}});
+    const{data,error:err}=await supabase.auth.signUp({email,password,options:{data:{name,phone}}});
     setSubmitting(false);
     if(err)return setError(friendlyError(err.message));
     if(data.user){
@@ -575,7 +579,7 @@ function HomePage({branches,services,reviews,staff,branchAvgRating,branchReviews
                       <div style={{padding:14}}>
                         <h3 style={{fontSize:15,fontWeight:700,marginBottom:4}}>{b.name}</h3>
                         <div style={{display:'flex',alignItems:'center',gap:4,fontSize:12,color:MUTED,marginBottom:6}}><Icon name="map" size={12} color={MUTED}/>{b.location||'Lusaka'}</div>
-                        <div style={{display:'flex',alignItems:'center',gap:4}}><Stars rating={Math.round(+avg)} size={12}/><span style={{fontSize:12,fontWeight:600}}>{avg}</span><span style={{fontSize:11,color:MUTED}}>({branchReviews(b.id).length})</span></div>
+                        <div style={{display:'flex',alignItems:'center',gap:4}}><Stars rating={Math.round(parseFloat(avg)||0)} size={12}/><span style={{fontSize:12,fontWeight:600}}>{avg}</span><span style={{fontSize:11,color:MUTED}}>({branchReviews(b.id).length})</span></div>
                       </div>
                     </div>
                   );
@@ -650,7 +654,7 @@ function ExplorePage({branches,services,reviews,branchAvgRating,branchReviews,na
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{display:'flex',justifyContent:'space-between',alignItems:'start'}}><h3 style={{fontSize:15,fontWeight:700}}>{b.name}</h3><button onClick={e=>{e.stopPropagation();toggleFav(b.id)}} className="touch-target" style={{background:'none',border:'none',cursor:'pointer'}}><Icon name="heart" size={18} color={favorites.includes(b.id)?ROSE:'#ddd'}/></button></div>
                   <div style={{display:'flex',alignItems:'center',gap:4,fontSize:12,color:MUTED,margin:'3px 0'}}><Icon name="map" size={12} color={MUTED}/>{b.location||'Lusaka'}</div>
-                  <div style={{display:'flex',alignItems:'center',gap:6}}><Stars rating={Math.round(+branchAvgRating(b.id))} size={12}/><span style={{fontSize:12,fontWeight:600}}>{branchAvgRating(b.id)}</span><span style={{fontSize:11,color:MUTED}}>({branchReviews(b.id).length})</span></div>
+                  <div style={{display:'flex',alignItems:'center',gap:6}}><Stars rating={Math.round(parseFloat(branchAvgRating(b.id))||0)} size={12}/><span style={{fontSize:12,fontWeight:600}}>{branchAvgRating(b.id)}</span><span style={{fontSize:11,color:MUTED}}>({branchReviews(b.id).length})</span></div>
                 </div>
               </div>
             ))}
@@ -757,7 +761,7 @@ function SalonPage({branch,services,reviews,staff,branchAvgRating,navigate,goBac
               <>
                 <div style={{background:CARD,borderRadius:16,padding:20,marginBottom:16,border:`1px solid ${BORDER}`,textAlign:'center',maxWidth:280}}>
                   <div style={{fontSize:36,fontWeight:700,fontFamily:'Fraunces,serif',color:DARK}}>{avg}</div>
-                  <Stars rating={Math.round(+avg)} size={18}/><div style={{fontSize:13,color:MUTED,marginTop:4}}>{reviews.length} review{reviews.length!==1?'s':''}</div>
+                  <Stars rating={Math.round(parseFloat(avg)||0)} size={18}/><div style={{fontSize:13,color:MUTED,marginTop:4}}>{reviews.length} review{reviews.length!==1?'s':''}</div>
                 </div>
                 <div style={{display:'grid',gap:10,gridTemplateColumns:bp==='desktop'?'repeat(2,1fr)':'1fr'}}>
                   {reviews.slice(0,reviewsShown).map(r=>(
@@ -939,7 +943,7 @@ function BookingFlow({flow,setBookingFlow,staff,services,createBooking,goBack,bp
               <div style={{background:CARD,borderRadius:16,border:`1px solid ${BORDER}`,padding:16,marginBottom:16}}>
                   <div style={{fontSize:14,fontWeight:600,marginBottom:4,display:'flex',alignItems:'center',gap:6}}><Icon name="smartphone" size={16} color={DARK}/> Mobile Money Number</div>
                   <div style={{fontSize:12,color:MUTED,marginBottom:10,lineHeight:1.5}}>Enter the number to pay from. You'll receive a USSD prompt to approve <strong>{fmtK(deposit)}</strong>.</div>
-                  <input value={flow.payerPhone||client?.phone||''} onChange={e=>update({payerPhone:e.target.value})} placeholder="e.g. 0971234567" style={{width:'100%',padding:'12px 14px',borderRadius:12,border:`1.5px solid ${BORDER}`,fontSize:15,background:BG,color:DARK,fontFamily:'inherit',letterSpacing:0.5}} />
+                  <input value={flow.payerPhone ?? client?.phone ?? ''} onChange={e=>update({payerPhone:e.target.value})} type="tel" autoComplete="tel" name="payerPhone" placeholder="e.g. 0971234567" style={{width:'100%',padding:'12px 14px',borderRadius:12,border:`1.5px solid ${BORDER}`,fontSize:15,background:BG,color:DARK,fontFamily:'inherit',letterSpacing:0.5}} />
                   <div style={{display:'flex',gap:6,marginTop:8}}>
                     {['MTN','Airtel','Zamtel'].map(n=><span key={n} style={{fontSize:10,fontWeight:600,color:MUTED,padding:'3px 8px',borderRadius:6,background:BG,border:`1px solid ${BORDER}`}}>{n}</span>)}
                   </div>
@@ -973,7 +977,7 @@ function BookingFlow({flow,setBookingFlow,staff,services,createBooking,goBack,bp
               </div>
               <div style={{display:'flex',gap:10}}>
                 <Btn variant="secondary" onClick={()=>update({step:2})}><Icon name="back" size={14} color={MUTED}/> Back</Btn>
-                <Btn variant="primary" full disabled={!!paymentState||!(flow.payerPhone||client?.phone)} onClick={()=>createBooking(flow)} style={{borderRadius:14,fontSize:16,boxShadow:`0 4px 20px ${ACCENT}40`}}>
+                <Btn variant="primary" full disabled={!!paymentState||!(flow.payerPhone ?? client?.phone)} onClick={()=>createBooking(flow)} style={{borderRadius:14,fontSize:16,boxShadow:`0 4px 20px ${ACCENT}40`}}>
                   Pay {fmtK(deposit)} & Book
                 </Btn>
               </div>
@@ -1121,7 +1125,7 @@ function MyBookingsPage({upcoming,past,getService,getStaffMember,getBranch,cance
           return(<>
             <p style={{fontSize:14,color:MUTED,lineHeight:1.6,marginBottom:12}}>Cancel <strong>{getService(cancelTarget.service_id)?.name}</strong> on {fmtDate(cancelTarget.booking_date)} at {fmtTime(cancelTarget.booking_time)}?</p>
             {isLate&&feePercent>0&&<div style={{background:'#fff3e0',borderRadius:12,padding:12,marginBottom:16,border:'1px solid #ffe0b2'}}><div style={{fontSize:13,fontWeight:700,color:'#e65100',marginBottom:4,display:'flex',alignItems:'center',gap:6}}><XCircle size={16} color="#e65100"/> Late Cancellation</div><div style={{fontSize:12,color:'#bf360c'}}>Fee: {fmtK(fee)} ({feePercent}%)</div></div>}
-            <div style={{display:'flex',gap:10}}><Btn full variant="secondary" onClick={()=>setCancelTarget(null)}>Keep</Btn><Btn full variant="primary" onClick={()=>{cancelBooking(cancelTarget.id);setCancelTarget(null)}} style={{background:'#c62828'}}>{fee>0?`Cancel ({fmtK(fee)})`:'Yes, Cancel'}</Btn></div>
+            <div style={{display:'flex',gap:10}}><Btn full variant="secondary" onClick={()=>setCancelTarget(null)}>Keep</Btn><Btn full variant="primary" onClick={()=>{cancelBooking(cancelTarget.id);setCancelTarget(null)}} style={{background:'#c62828'}}>{fee>0?`Cancel (${fmtK(fee)})`:'Yes, Cancel'}</Btn></div>
           </>);
         })()}
       </BottomSheet>
@@ -1149,37 +1153,37 @@ function SuggestionBox({source,authorName,authorEmail,branchId,showToast}) {
   };
 
   if(sent) return(
-    <div style={{background:`linear-gradient(135deg,${source==='client'?ACCENT:typeof C!=='undefined'?C.accent:ACCENT}12,${source==='client'?GOLD:typeof C!=='undefined'?C.gold:GOLD}12)`,borderRadius:18,padding:20,marginBottom:20,textAlign:'center',border:`1px solid ${source==='client'?ACCENT:typeof C!=='undefined'?C.accent:ACCENT}20`}}>
+    <div style={{background:`linear-gradient(135deg,${ACCENT}12,${GOLD}12)`,borderRadius:18,padding:20,marginBottom:20,textAlign:'center',border:`1px solid ${ACCENT}20`}}>
       <div style={{marginBottom:8}}><Icon name="check" size={28} color="#2e7d32"/></div>
       <div style={{fontSize:15,fontWeight:700}}>Thank you!</div>
-      <div style={{fontSize:13,color:source==='client'?MUTED:typeof C!=='undefined'?C.textMuted:MUTED,marginTop:4}}>Your suggestion has been submitted</div>
+      <div style={{fontSize:13,color:MUTED,marginTop:4}}>Your suggestion has been submitted</div>
     </div>
   );
 
   return(
     <div style={{marginBottom:20}}>
       {!open?(
-        <button onClick={()=>setOpen(true)} style={{width:'100%',background:source==='client'?CARD:'#fff',borderRadius:16,padding:16,border:`1px solid ${source==='client'?BORDER:typeof C!=='undefined'?C.border:'#e8e0d8'}`,cursor:'pointer',display:'flex',gap:12,alignItems:'center',textAlign:'left'}}>
-          <div style={{width:40,height:40,borderRadius:12,background:`linear-gradient(135deg,${source==='client'?ACCENT:typeof C!=='undefined'?C.accent:ACCENT}20,${source==='client'?GOLD:typeof C!=='undefined'?C.gold:GOLD}20)`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:18,flexShrink:0}}><Icon name="lightbulb" size={18} color={ACCENT}/></div>
-          <div style={{flex:1}}><div style={{fontSize:14,fontWeight:700,color:source==='client'?DARK:typeof C!=='undefined'?C.text:'#1a1a2e'}}>Got a Suggestion?</div><div style={{fontSize:12,color:source==='client'?MUTED:typeof C!=='undefined'?C.textMuted:'#8a7e74',marginTop:2}}>Help us improve LuminBook</div></div>
-          <Icon name="chevR" size={16} color={source==='client'?MUTED:'#8a7e74'}/>
+        <button onClick={()=>setOpen(true)} style={{width:'100%',background:CARD,borderRadius:16,padding:16,border:`1px solid ${BORDER}`,cursor:'pointer',display:'flex',gap:12,alignItems:'center',textAlign:'left'}}>
+          <div style={{width:40,height:40,borderRadius:12,background:`linear-gradient(135deg,${ACCENT}20,${GOLD}20)`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:18,flexShrink:0}}><Icon name="lightbulb" size={18} color={ACCENT}/></div>
+          <div style={{flex:1}}><div style={{fontSize:14,fontWeight:700,color:DARK}}>Got a Suggestion?</div><div style={{fontSize:12,color:MUTED,marginTop:2}}>Help us improve LuminBook</div></div>
+          <Icon name="chevR" size={16} color={MUTED}/>
         </button>
       ):(
-        <div style={{background:source==='client'?CARD:'#fff',borderRadius:18,padding:20,border:`1px solid ${source==='client'?BORDER:typeof C!=='undefined'?C.border:'#e8e0d8'}`}}>
+        <div style={{background:CARD,borderRadius:18,padding:20,border:`1px solid ${BORDER}`}}>
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
             <h3 style={{fontSize:16,fontWeight:700}}>Suggestion Box</h3>
-            <button onClick={()=>setOpen(false)} className="icon-btn" style={{background:'none',border:'none',cursor:'pointer',padding:4,borderRadius:8}}><Icon name="close" size={18} color={source==='client'?MUTED:'#8a7e74'}/></button>
+            <button onClick={()=>setOpen(false)} className="icon-btn" style={{background:'none',border:'none',cursor:'pointer',padding:4,borderRadius:8}}><Icon name="close" size={18} color={MUTED}/></button>
           </div>
           <div style={{marginBottom:12}}>
-            <label style={{fontSize:12,fontWeight:600,color:source==='client'?MUTED:typeof C!=='undefined'?C.textMuted:'#8a7e74',display:'block',marginBottom:6}}>Category</label>
+            <label style={{fontSize:12,fontWeight:600,color:MUTED,display:'block',marginBottom:6}}>Category</label>
             <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-              {cats.map(c=><button key={c} onClick={()=>setCat(c)} style={{padding:'6px 12px',borderRadius:20,border:`1.5px solid ${cat===c?(source==='client'?ACCENT:typeof C!=='undefined'?C.accent:ACCENT):(source==='client'?BORDER:typeof C!=='undefined'?C.border:'#e8e0d8')}`,background:cat===c?`${source==='client'?ACCENT:typeof C!=='undefined'?C.accent:ACCENT}12`:'transparent',color:cat===c?(source==='client'?ACCENT:typeof C!=='undefined'?C.accent:ACCENT):(source==='client'?DARK:typeof C!=='undefined'?C.text:'#1a1a2e'),fontSize:12,fontWeight:600,cursor:'pointer',textTransform:'capitalize'}}>{c}</button>)}
+              {cats.map(c=><button key={c} onClick={()=>setCat(c)} style={{padding:'6px 12px',borderRadius:20,border:`1.5px solid ${cat===c?ACCENT:BORDER}`,background:cat===c?`${ACCENT}12`:'transparent',color:cat===c?ACCENT:DARK,fontSize:12,fontWeight:600,cursor:'pointer',textTransform:'capitalize'}}>{c}</button>)}
             </div>
           </div>
-          <textarea value={msg} onChange={e=>setMsg(e.target.value)} placeholder="Tell us what you'd like to see improved, added, or fixed..." rows={4} style={{width:'100%',padding:'12px 14px',borderRadius:12,border:`1.5px solid ${source==='client'?BORDER:typeof C!=='undefined'?C.border:'#e8e0d8'}`,fontSize:14,background:source==='client'?BG:'#faf7f5',color:source==='client'?DARK:typeof C!=='undefined'?C.text:'#1a1a2e',marginBottom:12,resize:'vertical',minHeight:100,fontFamily:'DM Sans,sans-serif'}}/>
+          <textarea value={msg} onChange={e=>setMsg(e.target.value)} placeholder="Tell us what you'd like to see improved, added, or fixed..." rows={4} style={{width:'100%',padding:'12px 14px',borderRadius:12,border:`1.5px solid ${BORDER}`,fontSize:14,background:BG,color:DARK,marginBottom:12,resize:'vertical',minHeight:100,fontFamily:'DM Sans,sans-serif'}}/>
           <div style={{display:'flex',gap:10}}>
-            <button onClick={()=>setOpen(false)} style={{flex:1,padding:'12px',borderRadius:12,border:`1px solid ${source==='client'?BORDER:typeof C!=='undefined'?C.border:'#e8e0d8'}`,background:'transparent',fontSize:14,fontWeight:600,cursor:'pointer',color:source==='client'?DARK:typeof C!=='undefined'?C.text:'#1a1a2e'}}>Cancel</button>
-            <button onClick={submit} disabled={sending||!msg.trim()} style={{flex:1,padding:'12px',borderRadius:12,border:'none',background:msg.trim()?(source==='client'?ACCENT:typeof C!=='undefined'?C.accent:ACCENT):(source==='client'?BORDER:typeof C!=='undefined'?C.border:'#e8e0d8'),color:'#fff',fontSize:14,fontWeight:600,cursor:msg.trim()?'pointer':'default',opacity:sending?.6:1}}>{sending?'Sending...':'Submit'}</button>
+            <button onClick={()=>setOpen(false)} style={{flex:1,padding:'12px',borderRadius:12,border:`1px solid ${BORDER}`,background:'transparent',fontSize:14,fontWeight:600,cursor:'pointer',color:DARK}}>Cancel</button>
+            <button onClick={submit} disabled={sending||!msg.trim()} style={{flex:1,padding:'12px',borderRadius:12,border:'none',background:msg.trim()?ACCENT:BORDER,color:'#fff',fontSize:14,fontWeight:600,cursor:msg.trim()?'pointer':'default',opacity:sending?.6:1}}>{sending?'Sending...':'Submit'}</button>
           </div>
         </div>
       )}
@@ -1208,10 +1212,19 @@ function ProfilePage({client,clientBookings,branches,favorites,getBranch,navigat
     if(editForm.email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editForm.email)){showToast('Please enter a valid email address','error');return}
     setSaving(true);
     const area=editForm.area==='Other'?customArea:editForm.area;
+    // If email changed, update Supabase Auth first
+    if(editForm.email && editForm.email !== client.email){
+      const{error:authErr}=await supabase.auth.updateUser({email:editForm.email});
+      if(authErr){setSaving(false);showToast('Couldn\'t update email: '+friendlyError(authErr.message),'error');return}
+    }
+    // Update name in auth metadata too
+    if(editForm.name && editForm.name !== client.name){
+      await supabase.auth.updateUser({data:{name:editForm.name}});
+    }
     const{error}=await supabase.from('clients').update({name:editForm.name,phone:editForm.phone,email:editForm.email,area,updated_at:new Date().toISOString()}).eq('id',client.id);
     setSaving(false);
     if(error){showToast('Couldn\'t update your profile. Please try again.','error');return}
-    showToast('Profile updated!');setEditing(false);if(refreshClient)refreshClient();
+    showToast(editForm.email !== client.email ? 'Profile updated! Check your new email to confirm the change.' : 'Profile updated!');setEditing(false);if(refreshClient)refreshClient();
   };
 
   const StarRow=({value,onChange,label})=>(<div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}><span style={{fontSize:13,color:MUTED}}>{label}</span><div style={{display:'flex',gap:4}}>{[1,2,3,4,5].map(s=><span key={s} onClick={()=>onChange(s)} className="star-btn" style={{color:s<=value?'#F59E0B':BORDER,minWidth:28,textAlign:'center'}}><Star size={20} fill={s<=value?'#F59E0B':'none'} stroke={s<=value?'#F59E0B':'#ccc'} strokeWidth={1.5}/></span>)}</div></div>);
@@ -1400,13 +1413,19 @@ export default function LuminBookClient() {
       else {
         // FALLBACK: No client record exists — create one now
         // This catches cases where the DB trigger didn't fire or the signup insert failed
+        // Use upsert to handle race conditions (multiple tabs, rapid auth events)
         const code=(((u.user_metadata?.name||u.email).replace(/[^a-zA-Z]/g,'')).slice(0,3)+u.id.slice(0,4)).toUpperCase();
         const ins={auth_user_id:u.id,name:u.user_metadata?.name||u.email.split('@')[0],phone:u.user_metadata?.phone||'',email:u.email.toLowerCase(),referral_code:code,lumin_points:0,total_points_earned:0,total_bookings:0,total_spent:0,is_active:true,account_status:'active',created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
-        const{data:created,error:createErr}=await supabase.from('clients').insert(ins).select().single();
+        const{data:created,error:createErr}=await supabase.from('clients').upsert(ins,{onConflict:'auth_user_id'}).select().single();
         if(created) myClient=created;
         else {
-          console.warn('Fallback client create failed:',createErr?.message);
-          myClient={id:null,name:u.user_metadata?.name||u.email,email:u.email,phone:''};
+          // If upsert failed, try fetching once more (another tab may have just created it)
+          const{data:retry}=await supabase.from('clients').select('*').eq('auth_user_id',u.id).single();
+          if(retry) myClient=retry;
+          else {
+            console.warn('Fallback client create failed:',createErr?.message);
+            myClient={id:null,name:u.user_metadata?.name||u.email,email:u.email,phone:''};
+          }
         }
       }
     }
@@ -1433,7 +1452,7 @@ export default function LuminBookClient() {
 
   // ---- REVIEWS: all visible reviews (needed for branch ratings) ----
   const fetchReviews = async () => {
-    const{data}=await supabase.from('reviews').select('*').order('created_at',{ascending:false}).limit(500);
+    const{data}=await supabase.from('reviews').select('*').eq('is_visible',true).order('created_at',{ascending:false}).limit(500);
     setReviews(data||[]);
   };
 
@@ -1457,12 +1476,15 @@ export default function LuminBookClient() {
     const path = initialPath.current;
     if(!path || path==='index.html') return;
     deepLinkHandled.current = true;
-    const match = branches.find(b => b.booking_slug && (b.booking_slug === path || b.booking_slug === path.replace(/-/g,'')));
-    if(match) {
-      setSelectedBranch(match); setPage('salon'); setNavHistory(['home']);
-      window.history.replaceState(null,'','/');
+    const resolved = resolveUrlToPage('/' + path);
+    if(resolved.pg !== 'home') {
+      if(resolved.branch) setSelectedBranch(resolved.branch);
+      setPage(resolved.pg);
+      setNavHistory(resolved.pg !== 'home' ? ['home'] : []);
+      // Replace initial state so back from deep link goes to home
+      try { window.history.replaceState({pg: resolved.pg, branchId: resolved.branch?.id}, '', '/' + path); } catch(e) { /* ignore */ }
     }
-  }, [loading, branches]);
+  }, [loading, branches, resolveUrlToPage]);
 
   const showToastFn = (msg,type='success') => {setToast({msg,type});setTimeout(()=>setToast(null),2500)};
   const pushNotif = (title,body,type='info') => {setNotifications(prev=>[{id:Date.now(),title,body,type,time:new Date(),read:false},...prev].slice(0,50))};
@@ -1476,11 +1498,11 @@ export default function LuminBookClient() {
         if(payload.eventType==='UPDATE'){
           const b=payload.new;
           if(b.status==='confirmed'){showToastFn('Booking confirmed!');pushNotif('Booking Confirmed',`Your appointment on ${fmtDate(b.booking_date)} at ${fmtTime(b.booking_time)} is confirmed!`,'success')}
-          else if(b.status==='cancelled'&&b.cancelled_by==='business'){showToastFn('Your booking was cancelled by the studio','error');pushNotif('Booking Cancelled',`Your appointment on ${fmtDate(b.booking_date)} was cancelled by the studio. Your deposit will be refunded.`,'error')}
+          else if(b.status==='cancelled'&&b.cancelled_by==='business'){showToastFn('Your booking was cancelled by the studio','error');pushNotif('Booking Cancelled',`Your appointment on ${fmtDate(b.booking_date)} was cancelled by the studio. If you paid a deposit, a refund will be processed manually.`,'error')}
           else if(b.status==='completed'){
             // LuminPoints are awarded server-side by trigger (award_lumin_points_on_complete)
-            const earned=Math.max(1,Math.floor((b.total_amount||0)/10));
-            showToastFn(`+${earned} LuminPoints earned!`);pushNotif('Complete',`You earned ${earned} LuminPoints! Leave a review for bonus points`,'success');
+            // Don't display exact amount here since it may differ from server calculation
+            showToastFn('Booking complete! LuminPoints earned');pushNotif('Complete','Your appointment is done! LuminPoints have been added to your account. Leave a review for bonus points!','success');
           }
         }
         fetchMyDataDebounced();
@@ -1493,7 +1515,7 @@ export default function LuminBookClient() {
   const getStaffMember = id => staff.find(s=>s.id===id);
   const branchReviews = bid => reviews.filter(r=>r.branch_id===bid);
   const branchStaff = bid => staff.filter(s=>s.branch_id===bid);
-  const branchAvgRating = bid => {const rv=branchReviews(bid);return rv.length?(rv.reduce((s,r)=>s+(r.rating_overall||0),0)/rv.length).toFixed(1):'—'};
+  const branchAvgRating = bid => {const rv=branchReviews(bid);if(!rv.length) return 'New';return (rv.reduce((s,r)=>s+(r.rating_overall||0),0)/rv.length).toFixed(1)};
   const clientBookings = bookings; // Already scoped to client in fetchMyData
   const upcomingBookings = clientBookings.filter(b=>b.booking_date>=todayStr()&&!['cancelled','completed','no_show'].includes(b.status));
   const pastBookings = clientBookings.filter(b=>b.status==='completed'||b.status==='no_show'||(b.booking_date<todayStr()&&b.status!=='cancelled'));
@@ -1506,11 +1528,11 @@ export default function LuminBookClient() {
   const submitReview=async()=>{
     if(!reviewModal||reviewSubmitting)return;
     setReviewSubmitting(true);
-    const{error}=await supabase.from('reviews').insert({client_id:client.id,branch_id:reviewModal.branch_id,service_id:reviewModal.service_id,staff_id:reviewModal.staff_id,booking_id:reviewModal.id,rating_overall:reviewForm.rating,rating_average:reviewForm.rating,review_text:reviewForm.text,is_visible:true,moderation_status:'approved',can_edit_until:new Date(Date.now()+7*86400000).toISOString(),created_at:new Date().toISOString(),updated_at:new Date().toISOString()});
+    const{error}=await supabase.from('reviews').insert({client_id:client.id,branch_id:reviewModal.branch_id,service_id:reviewModal.service_id,staff_id:reviewModal.staff_id,booking_id:reviewModal.id,rating_overall:reviewForm.rating,rating_average:reviewForm.rating,review_text:reviewForm.text,is_visible:false,moderation_status:'pending',can_edit_until:new Date(Date.now()+7*86400000).toISOString(),created_at:new Date().toISOString(),updated_at:new Date().toISOString()});
     setReviewSubmitting(false);
     if(!error){
       const pts=5+(reviewForm.text?.length>20?5:0);
-      showToastFn(`Review submitted! +${pts} pts`);fetchMyData();fetchReviews()
+      showToastFn(`Review submitted! +${pts} pts — it'll appear once approved`);fetchMyData();fetchReviews()
     }
     else showToastFn('Couldn\'t submit review. Please try again.','error');
     setReviewModal(null);
@@ -1518,7 +1540,16 @@ export default function LuminBookClient() {
 
   // Service compare: show other salons offering same service
   const onServiceCompare=(svc)=>{setServiceCompare(svc)};
-  const compareResults=serviceCompare?services.filter(s=>s.name.toLowerCase()===serviceCompare.name.toLowerCase()&&s.id!==serviceCompare.id):[];
+  const compareResults=serviceCompare?services.filter(s=>{
+    if(s.id===serviceCompare.id) return false;
+    const a=serviceCompare.name.toLowerCase(), b=s.name.toLowerCase();
+    // Exact match, or one contains the other, or same category + shared words
+    if(a===b) return true;
+    if(a.includes(b)||b.includes(a)) return true;
+    const wordsA=a.split(/\s+/), wordsB=b.split(/\s+/);
+    const shared=wordsA.filter(w=>w.length>2&&wordsB.includes(w));
+    return s.category===serviceCompare.category && shared.length>=1;
+  }):[];
 
   const [reminders,setReminders] = useState([]);
   useEffect(() => {
@@ -1527,15 +1558,94 @@ export default function LuminBookClient() {
     setReminders(upcomingBookings.filter(b=>{const dt=new Date(`${b.booking_date}T${b.booking_time||'09:00'}`);return(dt-now)/3600000>0&&(dt-now)/3600000<=24}).map(b=>({...b,hoursUntil:Math.round((new Date(`${b.booking_date}T${b.booking_time||'09:00'}`)-new Date())/3600000)})));
   }, [upcomingBookings.length]);
 
-  const navigate = (pg,data) => {setNavHistory(h=>[...h,page]);setPage(pg);if(data?.branch)setSelectedBranch(data.branch);if(data?.bookingFlow)setBookingFlow(data.bookingFlow)};
-  const goBack = () => {const prev=navHistory[navHistory.length-1]||'home';setNavHistory(h=>h.slice(0,-1));setPage(prev)};
+  // ---- URL & DEEP LINK HELPERS ----
+  const getPageUrl = useCallback((pg, data) => {
+    if(pg === 'salon' && data?.branch) return '/' + (data.branch.booking_slug || data.branch.id);
+    if(pg === 'booking') return '/book';
+    if(pg === 'explore') return '/explore';
+    if(pg === 'bookings') return '/bookings';
+    if(pg === 'profile') return '/profile';
+    return '/';
+  }, []);
+
+  const resolveUrlToPage = useCallback((pathname) => {
+    const path = pathname.replace(/^\/+|\/+$/g,'').toLowerCase();
+    if(!path || path === 'index.html') return { pg: 'home' };
+    if(path === 'explore') return { pg: 'explore' };
+    if(path === 'bookings') return { pg: 'bookings' };
+    if(path === 'profile') return { pg: 'profile' };
+    if(path === 'book') return { pg: 'booking' };
+    // Try to resolve as a salon slug
+    const match = branches.find(b => b.booking_slug && (b.booking_slug === path || b.booking_slug === path.replace(/-/g,'')));
+    if(match) return { pg: 'salon', branch: match };
+    return { pg: 'home' };
+  }, [branches]);
+
+  const navigate = (pg,data) => {
+    setNavHistory(h=>[...h,page]);
+    setPage(pg);
+    if(data?.branch)setSelectedBranch(data.branch);
+    if(data?.bookingFlow)setBookingFlow(data.bookingFlow);
+    const url = getPageUrl(pg, data);
+    try { window.history.pushState({pg, branchId: data?.branch?.id}, '', url); } catch(e) { /* ignore */ }
+  };
+  const goBack = () => {
+    if(navHistory.length > 0) {
+      window.history.back(); // Let popstate handler manage state
+    } else {
+      setPage('home');
+      try { window.history.replaceState({pg:'home'}, '', '/'); } catch(e) { /* ignore */ }
+    }
+  };
+
+  // Handle browser back/forward buttons
+  useEffect(() => {
+    const onPopState = (e) => {
+      if(e.state?.pg) {
+        // Restore from history state
+        const pg = e.state.pg;
+        setPage(pg);
+        if(e.state.branchId) {
+          const br = branches.find(b => b.id === e.state.branchId);
+          if(br) setSelectedBranch(br);
+        }
+        setNavHistory(h => h.length > 0 ? h.slice(0, -1) : []);
+      } else {
+        // No state — resolve from URL
+        const resolved = resolveUrlToPage(window.location.pathname);
+        setPage(resolved.pg);
+        if(resolved.branch) setSelectedBranch(resolved.branch);
+        setNavHistory([]);
+      }
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [branches, resolveUrlToPage]);
   const toggleFav = bid => setFavorites(f=>f.includes(bid)?f.filter(x=>x!==bid):[...f,bid]);
 
   const cancelBooking = async (id) => {
     const bk=bookings.find(b=>b.id===id);
     if(bk){const br=branches.find(b=>b.id===bk.branch_id);const ch=br?.cancellation_hours??2;const dt=new Date(`${bk.booking_date}T${bk.booking_time||'00:00'}`);const hu=(dt-new Date())/3600000;if(hu<ch&&hu>0&&(br?.cancellation_fee_percent||0)>0)showToastFn('Late cancellation fee may apply','error')}
     const{error}=await supabase.from('bookings').update({status:'cancelled',cancelled_at:new Date().toISOString(),cancellation_reason:'Cancelled by client',cancelled_by:'client',updated_at:new Date().toISOString()}).eq('id',id);
-    if(!error){showToastFn('Booking cancelled');fetchMyData()}else showToastFn('Couldn\'t cancel booking. Please try again.','error');
+    if(!error){
+      showToastFn('Booking cancelled');
+      // If deposit was paid, notify admin to issue manual refund
+      if(bk?.deposit_paid && bk?.deposit_amount > 0){
+        try{
+          const{data:{session}}=await supabase.auth.getSession();
+          const apiKey=supabase.supabaseKey||'';
+          const br=branches.find(b=>b.id===bk.branch_id);
+          const svc=services.find(s=>s.id===bk.service_id);
+          await fetch(supabase.supabaseUrl+'/functions/v1/sms-notify',{
+            method:'POST',
+            headers:{'Content-Type':'application/json','Authorization':'Bearer '+(session?.access_token||''),'apikey':apiKey},
+            body:JSON.stringify({type:'admin_refund_request',branch_id:bk.branch_id,booking_id:id,client_name:client?.name||'Client',client_phone:client?.phone||'',service_name:svc?.name||'Service',deposit_amount:bk.deposit_amount,reason:'Cancelled by client',branch_name:br?.name||'Studio'})
+          });
+          showToastFn('Refund request sent to admin. You will be refunded manually.');
+        }catch(e){console.warn('Refund SMS notification failed:',e.message)}
+      }
+      fetchMyData();
+    }else showToastFn('Couldn\'t cancel booking. Please try again.','error');
   };
 
   const SUPABASE_URL = supabase.supabaseUrl;
@@ -1545,9 +1655,19 @@ export default function LuminBookClient() {
     if (isProcessingPayment.current) return;
     isProcessingPayment.current = true;
 
+    // Check account status — re-fetch from DB to catch bans applied mid-session
+    if(client?.id){
+      const{data:freshClient}=await supabase.from('clients').select('account_status').eq('id',client.id).single();
+      if(freshClient && freshClient.account_status !== 'active'){
+        isProcessingPayment.current=false;
+        showToastFn(freshClient.account_status==='banned'?'Your account has been suspended. Please contact support.':'Your account is currently restricted. Please contact support.','error');
+        return;
+      }
+    }
+
     const svc = flow.service;
     const deposit = parseFloat(svc?.deposit_amount) || parseFloat(flow.branch?.default_deposit) || 100;
-    const payerPhone = flow.payerPhone || client.phone || '';
+    const payerPhone = flow.payerPhone ?? client.phone ?? '';
 
     // Double-booking guard
     if(flow.staff?.id){
@@ -1639,9 +1759,13 @@ export default function LuminBookClient() {
           setPaymentState(ps => ({ ...ps, step: 'verifying', message: `Checking payment... (${attempts}/${maxAttempts})` }));
 
           try {
+            // Get fresh session each poll — the original session from createBooking() 
+            // may have expired during the 2-minute polling window
+            const { data: { session: freshSession } } = await supabase.auth.getSession();
+            const freshApiKey = supabase.supabaseKey || '';
             const vRes = await fetch(SUPABASE_URL + '/functions/v1/process-payment', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (session?.access_token || ''), 'apikey': apiKey },
+              headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (freshSession?.access_token || ''), 'apikey': freshApiKey },
               body: JSON.stringify({ action: 'verify', payment_id: paymentId })
             });
             const vData = await vRes.json();
@@ -1817,7 +1941,11 @@ export default function LuminBookClient() {
     <>
       <style>{css}</style>
       {isOffline&&<div role="alert" style={{position:'fixed',top:0,left:0,right:0,zIndex:2100,background:'#c62828',color:'#fff',textAlign:'center',padding:'8px 16px',fontSize:13,fontWeight:600,display:'flex',alignItems:'center',justifyContent:'center',gap:6}}><Icon name="xCircle" size={14} color="#fff"/>You're offline — check your connection</div>}
-      <AppShell page={page} setPage={pg=>{setNavHistory([]);setPage(pg)}} client={client} unreadCount={unreadCount} onNotifClick={()=>setShowNotifs(true)} onLogout={handleLogout} bp={bp}>
+      <AppShell page={page} setPage={pg=>{setNavHistory([]);setPage(pg)}} client={client} unreadCount={unreadCount} onNotifClick={()=>setShowNotifs(true)} onLogout={handleLogout} bp={bp} onNavTo={(pg)=>{
+        setNavHistory([]);setPage(pg);
+        const url = getPageUrl(pg);
+        try { window.history.pushState({pg}, '', url); } catch(e) { /* ignore */ }
+      }}>
         <div key={page} className="page-in" role="main">{pages[page]||pages.home}</div>
       </AppShell>
       <div aria-live="polite" aria-atomic="true">{toast&&<Toast message={toast.msg} type={toast.type}/>}</div>
@@ -1863,7 +1991,15 @@ export default function LuminBookClient() {
       <BottomSheet open={!!serviceCompare} onClose={()=>setServiceCompare(null)} title={serviceCompare?`${serviceCompare.name} — Compare`:'Compare'}>
         {serviceCompare&&(()=>{
           const thisBranch=branches.find(b=>b.id===serviceCompare.branch_id);
-          const others=services.filter(s=>s.name.toLowerCase()===serviceCompare.name.toLowerCase()&&s.id!==serviceCompare.id);
+          const others=services.filter(s=>{
+            if(s.id===serviceCompare.id) return false;
+            const a=serviceCompare.name.toLowerCase(), b=s.name.toLowerCase();
+            if(a===b) return true;
+            if(a.includes(b)||b.includes(a)) return true;
+            const wordsA=a.split(/\s+/), wordsB=b.split(/\s+/);
+            const shared=wordsA.filter(w=>w.length>2&&wordsB.includes(w));
+            return s.category===serviceCompare.category && shared.length>=1;
+          });
           const allMatches=[serviceCompare,...others];
           return(<>
             <div style={{fontSize:13,color:MUTED,marginBottom:14}}>{allMatches.length} studio{allMatches.length!==1?'s':''} offer{allMatches.length===1?'s':''} this service</div>
