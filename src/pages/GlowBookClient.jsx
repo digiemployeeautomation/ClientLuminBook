@@ -786,21 +786,17 @@ function SalonPage({branch,services,reviews,staff,branchAvgRating,navigate,goBac
 }
 
 function BookingFlow({flow,setBookingFlow,staff,services,createBooking,goBack,bp,client,paymentState,setPaymentState,cancelPayment}) {
-  if(!flow) return null;
-  const update=data=>setBookingFlow(f=>({...f,...data}));
-  const step=flow.step||0;
-  const deposit = parseFloat(flow.service?.deposit_amount) || parseFloat(flow.branch?.default_deposit) || 100;
-  const pad=bp==='desktop'?'32px':'20px';
-  const openH=parseInt(flow.branch?.open_time?.slice(0,2))||8;const openM=parseInt(flow.branch?.open_time?.slice(3,5))||0;
-  const closeH=parseInt(flow.branch?.close_time?.slice(0,2))||17;const closeM=parseInt(flow.branch?.close_time?.slice(3,5))||0;
-  const interval=flow.branch?.slot_interval||30;
-  const timeSlots=[];
-  for(let m=openH*60+openM;m<closeH*60+closeM;m+=interval){const h=Math.floor(m/60),mi=m%60;timeSlots.push(`${String(h).padStart(2,'0')}:${String(mi).padStart(2,'0')}`);}
   const [bookedSlots,setBookedSlots]=useState([]);
   const [blockedSlots,setBlockedSlots]=useState([]);
 
+  const openH=parseInt(flow?.branch?.open_time?.slice(0,2))||8;const openM=parseInt(flow?.branch?.open_time?.slice(3,5))||0;
+  const closeH=parseInt(flow?.branch?.close_time?.slice(0,2))||17;const closeM=parseInt(flow?.branch?.close_time?.slice(3,5))||0;
+  const interval=flow?.branch?.slot_interval||30;
+  const timeSlots=[];
+  for(let m=openH*60+openM;m<closeH*60+closeM;m+=interval){const h=Math.floor(m/60),mi=m%60;timeSlots.push(`${String(h).padStart(2,'0')}:${String(mi).padStart(2,'0')}`);}
+
   useEffect(()=>{
-    if(!flow.date)return;
+    if(!flow||!flow.date)return;
     if(flow.staff?.id){
       // Specific staff: show their booked slots
       supabase.from('bookings').select('booking_time').eq('booking_date',flow.date).eq('staff_id',flow.staff.id).neq('status','cancelled')
@@ -820,8 +816,13 @@ function BookingFlow({flow,setBookingFlow,staff,services,createBooking,goBack,bp
         });
       setBlockedSlots([]);
     }
-  },[flow.date,flow.staff]);
+  },[flow?.date,flow?.staff]);
 
+  if(!flow) return null;
+  const update=data=>setBookingFlow(f=>({...f,...data}));
+  const step=flow.step||0;
+  const deposit = parseFloat(flow.service?.deposit_amount) || parseFloat(flow.branch?.default_deposit) || 100;
+  const pad=bp==='desktop'?'32px':'20px';
   const maxDays=flow.branch?.max_booking_days_ahead||30;
   const dates=[];for(let i=0;i<maxDays;i++){const d=new Date();d.setDate(d.getDate()+i);dates.push(d.toISOString().slice(0,10))}
   const grouped={};services.forEach(s=>{if(!grouped[s.category])grouped[s.category]=[];grouped[s.category].push(s)});
