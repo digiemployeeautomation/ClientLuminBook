@@ -26,9 +26,8 @@ const CATEGORIES_ICONS = { Braids:'braids', Hair:'hair', Nails:'nails', Skincare
 const CatIcon = ({cat,size=18}) => { const n=CATEGORIES_ICONS[cat]; return n ? <Icon name={n} size={size} color={ACCENT}/> : <Icon name="sparkle" size={size} color={ACCENT}/> };
 const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-// Fix #4: was T00:00:00 which shifts date back 1 day in UTC+2 (Zambia). Using T12:00:00 keeps the correct local date.
-const fmtDate = d => { if(!d) return 'â€”'; const dt = new Date(d + 'T12:00:00'); return `${DAYS[dt.getDay()]}, ${dt.getDate()} ${MONTHS[dt.getMonth()]}`; };
-const fmtTime = t => { if(!t) return 'â€”'; const [h,m] = t.split(':'); const hr = +h; return `${hr > 12 ? hr-12 : hr || 12}:${m} ${hr >= 12 ? 'PM' : 'AM'}`; };
+const fmtDate = d => { if(!d) return '-'; const dt = new Date(d + 'T12:00:00'); return `${DAYS[dt.getDay()]}, ${dt.getDate()} ${MONTHS[dt.getMonth()]}`; };
+const fmtTime = t => { if(!t) return '-'; const [h,m] = t.split(':'); const hr = +h; return `${hr > 12 ? hr-12 : hr || 12}:${m} ${hr >= 12 ? 'PM' : 'AM'}`; };
 const todayStr = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
 const fmtK = v => { const n = parseFloat(v) || 0; return 'K' + n.toLocaleString('en-ZM', { minimumFractionDigits: 0, maximumFractionDigits: 0 }); };
 const isValidZambianPhone = (phone) => { if (!phone) return false; const clean = phone.replace(/[\s\-()]/g, ''); return /^(?:\+?260|0)[79]\d{8}$/.test(clean); };
@@ -45,7 +44,7 @@ const friendlyError = (msg) => {
   if (m.includes('network') || m.includes('fetch')) return 'Connection error. Check your internet and try again.';
   if (m.includes('timeout')) return 'Request timed out. Please try again.';
   if (m.includes('duplicate') || m.includes('already exists') || m.includes('unique constraint')) return 'This record already exists.';
-  if (m.includes('foreign key') || m.includes('violates')) return 'Couldn\'t save â€” a linked record is missing.';
+  if (m.includes('foreign key') || m.includes('violates')) return 'Couldn\'t save - a linked record is missing.';
   if (m.includes('database error') || m.includes('schema')) return 'Service temporarily unavailable. Please try again in a moment.';
   if (m.includes('jwt') || m.includes('token') || m.includes('unauthorized')) return 'Your session expired. Please sign in again.';
   if (msg.length > 80) return 'Something went wrong. Please try again.';
@@ -171,7 +170,6 @@ const Icon = ({ name, size = 20, color = DARK, fill: fillProp, ...p }) => {
 
 const Skeleton = ({w,h,r=8,style:s}) => <div className="skeleton" style={{width:w,height:h,borderRadius:r,...s}}/>;
 
-// â”€â”€ LUMINBOOK LOGO COMPONENTS â”€â”€
 const LogoIcon = ({size=36,onClick,style:s}) => (
   <div onClick={onClick} style={{width:size,height:size,borderRadius:size*.3,cursor:onClick?'pointer':'default',flexShrink:0,...s}}>
     <svg width={size} height={size} viewBox="0 0 64 64" fill="none">
@@ -268,6 +266,25 @@ function AppShell({page,setPage,children,client,unreadCount,onNotifClick,onLogou
           </div>
           <button onClick={onLogout} className="touch-target" style={{background:'none',border:'none',cursor:'pointer'}}><Icon name="logout" size={18} color={MUTED}/></button>
         </div>
+        <a
+          href="https://studio.luminbook.cc"
+          target="_blank"
+          rel="noreferrer"
+          style={{
+            display:'flex',alignItems:'center',gap:8,marginTop:10,
+            padding:'9px 12px',borderRadius:10,
+            border:`1px solid ${BORDER}`,
+            background:'#faf7f5',
+            color:MUTED,fontSize:12,fontWeight:600,
+            textDecoration:'none',transition:'all .15s',
+          }}
+          onMouseEnter={e=>{e.currentTarget.style.borderColor=ACCENT;e.currentTarget.style.color=ACCENT;}}
+          onMouseLeave={e=>{e.currentTarget.style.borderColor=BORDER;e.currentTarget.style.color=MUTED;}}
+        >
+          <LogoIcon size={18}/>
+          LuminBook Studio
+          <span style={{marginLeft:'auto',fontSize:11,opacity:.6}}>→</span>
+        </a>
       </div>
     </aside>
   );
@@ -298,6 +315,7 @@ function AppShell({page,setPage,children,client,unreadCount,onNotifClick,onLogou
     </div>
   );
 
+  // ── FIXED: <a tag was missing, causing a syntax error ──
   const TopBar = () => (
     <header style={{position:'sticky',top:0,zIndex:100,background:'rgba(255,255,255,.92)',backdropFilter:'blur(16px)',borderBottom:`1px solid ${BORDER}`,padding:'0 16px',display:'flex',alignItems:'center',justifyContent:'space-between',height:56}}>
       <div style={{display:'flex',alignItems:'center',gap:10}}>
@@ -305,6 +323,22 @@ function AppShell({page,setPage,children,client,unreadCount,onNotifClick,onLogou
         <LogoFull iconSize={28} fontSize={16} onClick={()=>navTo('home')} gap={8}/>
       </div>
       <div style={{display:'flex',alignItems:'center',gap:4}}>
+        <a
+          href="https://studio.luminbook.cc"
+          target="_blank"
+          rel="noreferrer"
+          aria-label="Open LuminBook Studio"
+          style={{
+            display:'flex',alignItems:'center',gap:5,
+            padding:'0 10px',height:34,borderRadius:8,
+            border:`1.5px solid ${BORDER}`,background:CARD,
+            color:DARK,fontSize:12,fontWeight:600,
+            textDecoration:'none',whiteSpace:'nowrap',
+          }}
+        >
+          <LogoIcon size={16}/>
+          Studio
+        </a>
         <button onClick={onNotifClick} className="touch-target" aria-label="Notifications" style={{background:'none',border:'none',cursor:'pointer',position:'relative'}}>
           <Icon name="bell" size={22} color={MUTED}/>
           {unreadCount>0&&<span className="badge-pulse" style={{position:'absolute',top:6,right:6,width:8,height:8,borderRadius:4,background:'#EF4444'}}/>}
@@ -352,12 +386,10 @@ function AuthScreen({onAuth}) {
     setSubmitting(false);
     if(err)return setError(friendlyError(err.message));
     if(data.user){
-      // Handle referral if provided (best-effort â€” runs before email confirmation)
       if(referralCode.trim()){
         try{
           const{data:ref}=await supabase.from('clients').select('id').eq('referral_code',referralCode.trim().toUpperCase()).single();
           if(ref){
-            // Update the client record the trigger just created (or will create) with referral
             await supabase.from('clients').update({referred_by:ref.id}).eq('auth_user_id',data.user.id);
             await supabase.from('referrals').insert({referrer_id:ref.id,referred_email:email,referred_name:name,referral_code:referralCode.trim().toUpperCase(),status:'signed_up'});
           }
@@ -397,7 +429,7 @@ function AuthScreen({onAuth}) {
           </div>
         ):mode==='reset_sent'?(
           <div style={{textAlign:'center',padding:'40px 0'}}>
-            <div style={{fontSize:56,marginBottom:16}}>ðŸ”‘</div>
+            <div style={{fontSize:56,marginBottom:16}}>🔑</div>
             <h2 style={{fontFamily:'Fraunces,serif',fontSize:22,fontWeight:700,marginBottom:8}}>Reset link sent</h2>
             <p style={{color:MUTED,fontSize:14,marginBottom:24}}>Check <strong>{email}</strong>.</p>
             <Btn full variant="primary" onClick={()=>{setMode('login');setError('')}}>Back to Login</Btn>
@@ -449,7 +481,7 @@ function ResetPasswordForm({onDone}) {
   };
   if(done) return(
     <div style={{background:CARD,borderRadius:20,padding:40,maxWidth:400,width:'100%',textAlign:'center'}}>
-      <div style={{fontSize:48,marginBottom:16}}>âœ“</div>
+      <div style={{fontSize:48,marginBottom:16}}>✓</div>
       <h2 style={{fontFamily:'Fraunces,serif',fontSize:22,fontWeight:700,marginBottom:8}}>Password updated</h2>
       <p style={{color:MUTED,fontSize:14,marginBottom:24}}>Your password has been changed successfully.</p>
       <Btn full variant="primary" onClick={onDone}>Continue</Btn>
@@ -458,7 +490,7 @@ function ResetPasswordForm({onDone}) {
   return(
     <div style={{background:CARD,borderRadius:20,padding:40,maxWidth:400,width:'100%'}}>
       <div style={{textAlign:'center',marginBottom:24}}>
-        <div style={{fontSize:48,marginBottom:12}}>ðŸ”‘</div>
+        <div style={{fontSize:48,marginBottom:12}}>🔑</div>
         <h2 style={{fontFamily:'Fraunces,serif',fontSize:22,fontWeight:700,marginBottom:4}}>Set new password</h2>
         <p style={{color:MUTED,fontSize:14}}>Enter your new password below</p>
       </div>
@@ -477,16 +509,11 @@ function HomePage({branches,services,reviews,staff,branchAvgRating,branchReviews
   const pad=bp==='desktop'?'32px':'20px';
   const [isSearching,setIsSearching]=useState(false);
   const q=searchQuery.toLowerCase().trim();
-
-  // Smart search: match salons and services
   const matchedBranches=q?branches.filter(b=>b.name?.toLowerCase().includes(q)||b.location?.toLowerCase().includes(q)):[];
   const matchedServices=q?services.filter(s=>s.name?.toLowerCase().includes(q)||s.category?.toLowerCase().includes(q)):[];
   const hasResults=matchedBranches.length>0||matchedServices.length>0;
-
-  // Sort categories by service count (most popular first)
   const catCounts={};services.forEach(s=>{catCounts[s.category]=(catCounts[s.category]||0)+1});
   const sortedCats=['All',...[...new Set(services.map(s=>s.category).filter(Boolean))].sort((a,b)=>(catCounts[b]||0)-(catCounts[a]||0))];
-
   const doSearch=()=>{if(q)setIsSearching(true)};
 
   return (
@@ -507,7 +534,6 @@ function HomePage({branches,services,reviews,staff,branchAvgRating,branchReviews
         </div>
       </div>
       <div style={{padding:`16px ${pad} 32px`}}>
-        {/* Inline search results */}
         {isSearching&&q?(
           <div style={{marginBottom:24}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
@@ -521,10 +547,10 @@ function HomePage({branches,services,reviews,staff,branchAvgRating,branchReviews
                 <div style={{display:'grid',gap:10,gridTemplateColumns:bp==='desktop'?'repeat(2,1fr)':'1fr'}}>
                   {matchedBranches.map(b=>{const avg=branchAvgRating(b.id);return(
                     <div key={b.id} onClick={()=>navigate('salon',{branch:b})} className="card-interactive" style={{background:CARD,borderRadius:16,padding:14,border:`1px solid ${BORDER}`,cursor:'pointer',display:'flex',gap:12,alignItems:'center'}}>
-                      <div style={{width:50,height:50,borderRadius:14,background:`linear-gradient(135deg,${ACCENT}40,${ROSE}40)`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,fontSize:20}}>âœ‚</div>
+                      <div style={{width:50,height:50,borderRadius:14,background:`linear-gradient(135deg,${ACCENT}40,${ROSE}40)`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,fontSize:20}}>✂</div>
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{fontSize:14,fontWeight:700}}>{b.name}</div>
-                        <div style={{display:'flex',alignItems:'center',gap:6,fontSize:12,color:MUTED,marginTop:2}}><Icon name="map" size={11} color={MUTED}/>{b.location||'Lusaka'}<span>â€¢</span><Icon name="star" size={11} color={GOLD}/>{avg}</div>
+                        <div style={{display:'flex',alignItems:'center',gap:6,fontSize:12,color:MUTED,marginTop:2}}><Icon name="map" size={11} color={MUTED}/>{b.location||'Lusaka'}<span>•</span><Icon name="star" size={11} color={GOLD}/>{avg}</div>
                       </div>
                       <Icon name="chevR" size={16} color={MUTED}/>
                     </div>
@@ -540,7 +566,7 @@ function HomePage({branches,services,reviews,staff,branchAvgRating,branchReviews
                     <div key={s.id} onClick={()=>onServiceCompare(s)} style={{background:CARD,borderRadius:16,padding:14,border:`1px solid ${BORDER}`,cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:3}}><CatIcon cat={s.category} size={14}/><span style={{fontSize:14,fontWeight:600}}>{s.name}</span></div>
-                        <div style={{fontSize:12,color:MUTED}}>{br?.name||'Studio'} â€¢ {s.duration}{s.duration_max&&s.duration_max!==s.duration?`â€“${s.duration_max}`:''} min</div>
+                        <div style={{fontSize:12,color:MUTED}}>{br?.name||'Studio'} • {s.duration}{s.duration_max&&s.duration_max!==s.duration?`–${s.duration_max}`:''} min</div>
                       </div>
                       <div style={{fontSize:16,fontWeight:700,color:ACCENT,flexShrink:0,marginLeft:12}}>{fmtK(s.price)}</div>
                     </div>
@@ -554,7 +580,7 @@ function HomePage({branches,services,reviews,staff,branchAvgRating,branchReviews
             {reminders?.length>0&&<div style={{marginBottom:20}}>{reminders.map(r=>{const svc=getService?.(r.service_id);const br=getBranch?.(r.branch_id);return(
               <div key={r.id} onClick={()=>navigate('bookings')} style={{background:`linear-gradient(135deg,${ACCENT}12,${ROSE}12)`,borderRadius:16,padding:14,marginBottom:8,border:`1px solid ${ACCENT}25`,cursor:'pointer',display:'flex',gap:12,alignItems:'center'}}>
                 <div style={{width:44,height:44,borderRadius:12,background:`linear-gradient(135deg,${ACCENT}30,${GOLD}30)`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon name="clock" size={20} color={ACCENT}/></div>
-                <div style={{flex:1,minWidth:0}}><div style={{fontSize:13,fontWeight:700,color:ACCENT}}>Upcoming in {r.hoursUntil}h</div><div style={{fontSize:14,fontWeight:600}}>{svc?.name||'Appointment'}</div><div style={{fontSize:12,color:MUTED}}>{br?.name} Â· {fmtTime(r.booking_time)}</div></div>
+                <div style={{flex:1,minWidth:0}}><div style={{fontSize:13,fontWeight:700,color:ACCENT}}>Upcoming in {r.hoursUntil}h</div><div style={{fontSize:14,fontWeight:600}}>{svc?.name||'Appointment'}</div><div style={{fontSize:12,color:MUTED}}>{br?.name} · {fmtTime(r.booking_time)}</div></div>
                 <Icon name="chevR" size={16} color={ACCENT}/>
               </div>
             )})}</div>}
@@ -574,7 +600,7 @@ function HomePage({branches,services,reviews,staff,branchAvgRating,branchReviews
                   return(
                     <div key={b.id} onClick={()=>navigate('salon',{branch:b})} className="card-interactive" style={{background:CARD,borderRadius:18,overflow:'hidden',border:`1px solid ${BORDER}`,cursor:'pointer'}}>
                       <div style={{height:100,background:`linear-gradient(135deg,${bgC},${bgC}dd)`,position:'relative',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                        <span style={{fontSize:36,opacity:.25}}>âœ‚</span>
+                        <span style={{fontSize:36,opacity:.25}}>✂</span>
                         <button onClick={e=>{e.stopPropagation();toggleFav(b.id)}} style={{position:'absolute',top:10,right:10,background:'rgba(255,255,255,.8)',border:'none',borderRadius:50,width:34,height:34,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}><Icon name="heart" size={16} color={favorites.includes(b.id)?ROSE:'#999'}/></button>
                       </div>
                       <div style={{padding:14}}>
@@ -595,7 +621,7 @@ function HomePage({branches,services,reviews,staff,branchAvgRating,branchReviews
                     {s.images?.[0]&&<img src={s.images[0]} alt="" style={{width:'100%',height:80,objectFit:'cover',borderRadius:10,marginBottom:8}}/>}
                     <div style={{marginBottom:8}}>{!s.images?.[0]&&<CatIcon cat={s.category} size={24}/>}</div>
                     <div style={{fontSize:14,fontWeight:600,marginBottom:4,lineHeight:1.3}}>{s.name}</div>
-                    <div style={{fontSize:13,color:MUTED}}>{s.duration}{s.duration_max&&s.duration_max!==s.duration?`â€“${s.duration_max}`:''} min</div>
+                    <div style={{fontSize:13,color:MUTED}}>{s.duration}{s.duration_max&&s.duration_max!==s.duration?`–${s.duration_max}`:''} min</div>
                     <div style={{fontSize:15,fontWeight:700,color:ACCENT,marginTop:6}}>{fmtK(s.price)}</div>
                   </div>
                 ))}
@@ -651,7 +677,7 @@ function ExplorePage({branches,services,reviews,branchAvgRating,branchReviews,na
           <div className="gb-salon-list">
             {filteredBranches.map(b=>(
               <div key={b.id} onClick={()=>navigate('salon',{branch:b})} className="card-interactive" style={{background:CARD,borderRadius:18,padding:16,border:`1px solid ${BORDER}`,cursor:'pointer',display:'flex',gap:14}}>
-                <div style={{width:64,height:64,borderRadius:14,background:`linear-gradient(135deg,${ACCENT}40,${ROSE}40)`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,fontSize:24}}>âœ‚</div>
+                <div style={{width:64,height:64,borderRadius:14,background:`linear-gradient(135deg,${ACCENT}40,${ROSE}40)`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,fontSize:24}}>✂</div>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{display:'flex',justifyContent:'space-between',alignItems:'start'}}><h3 style={{fontSize:15,fontWeight:700}}>{b.name}</h3><button onClick={e=>{e.stopPropagation();toggleFav(b.id)}} className="touch-target" style={{background:'none',border:'none',cursor:'pointer'}}><Icon name="heart" size={18} color={favorites.includes(b.id)?ROSE:'#ddd'}/></button></div>
                   <div style={{display:'flex',alignItems:'center',gap:4,fontSize:12,color:MUTED,margin:'3px 0'}}><Icon name="map" size={12} color={MUTED}/>{b.location||'Lusaka'}</div>
@@ -667,7 +693,7 @@ function ExplorePage({branches,services,reviews,branchAvgRating,branchReviews,na
               <div key={s.id} onClick={()=>onServiceCompare(s)} style={{background:CARD,borderRadius:16,border:`1px solid ${BORDER}`,cursor:'pointer',overflow:'hidden'}}>
                 {s.images?.[0]&&<img src={s.images[0]} alt="" style={{width:'100%',height:80,objectFit:'cover'}}/>}
                 <div style={{padding:14,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                  <div style={{flex:1,minWidth:0}}><div style={{display:'flex',alignItems:'center',gap:6,marginBottom:4}}><CatIcon cat={s.category} size={16}/><span style={{fontSize:15,fontWeight:600}}>{s.name}</span></div><div style={{fontSize:12,color:MUTED}}>{br?.name} â€¢ {s.duration}{s.duration_max&&s.duration_max!==s.duration?`â€“${s.duration_max}`:''} min</div></div>
+                  <div style={{flex:1,minWidth:0}}><div style={{display:'flex',alignItems:'center',gap:6,marginBottom:4}}><CatIcon cat={s.category} size={16}/><span style={{fontSize:15,fontWeight:600}}>{s.name}</span></div><div style={{fontSize:12,color:MUTED}}>{br?.name} • {s.duration}{s.duration_max&&s.duration_max!==s.duration?`–${s.duration_max}`:''} min</div></div>
                   <div style={{textAlign:'right',flexShrink:0,marginLeft:12}}><div style={{fontSize:16,fontWeight:700,color:ACCENT}}>{fmtK(s.price)}</div></div>
                 </div>
               </div>
@@ -723,7 +749,7 @@ function SalonPage({branch,services,reviews,staff,branchAvgRating,navigate,goBac
                 <div style={{padding:14,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                   <div style={{flex:1,minWidth:0,cursor:'pointer'}} onClick={()=>onServiceCompare(s)}>
                     <div style={{fontSize:15,fontWeight:600}}>{s.name}</div>
-                    <div style={{fontSize:12,color:MUTED,marginTop:2}}>{s.duration}{s.duration_max&&s.duration_max!==s.duration?`â€“${s.duration_max}`:''} min â€¢ {fmtK(s.deposit_amount||branch?.default_deposit||100)} dep</div>
+                    <div style={{fontSize:12,color:MUTED,marginTop:2}}>{s.duration}{s.duration_max&&s.duration_max!==s.duration?`–${s.duration_max}`:''} min • {fmtK(s.deposit_amount||branch?.default_deposit||100)} dep</div>
                     {s.description&&<div style={{fontSize:12,color:MUTED,marginTop:4,lineHeight:1.4}}>{s.description.slice(0,80)}{s.description.length>80?'...':''}</div>}
                   </div>
                   <div style={{display:'flex',alignItems:'center',gap:10,flexShrink:0}}>
@@ -799,7 +825,6 @@ function BookingFlow({flow,setBookingFlow,staff,services,createBooking,goBack,bp
   useEffect(()=>{
     if(!flow||!flow.date)return;
     if(flow.staff?.id){
-      // Specific staff: show their booked slots
       supabase.from('bookings').select('booking_time').eq('booking_date',flow.date).eq('staff_id',flow.staff.id).neq('status','cancelled')
         .then(({data})=>setBookedSlots((data||[]).map(b=>b.booking_time?.slice(0,5))));
       supabase.from('staff_blocked_times').select('*').eq('staff_id',flow.staff.id).eq('block_date',flow.date).then(({data})=>{
@@ -807,7 +832,6 @@ function BookingFlow({flow,setBookingFlow,staff,services,createBooking,goBack,bp
         const bl=[];data.forEach(bt=>{if(!bt.start_time)timeSlots.forEach(t=>bl.push(t));else{const s=bt.start_time?.slice(0,5),e=bt.end_time?.slice(0,5);timeSlots.forEach(t=>{if(t>=s&&t<=e)bl.push(t)})}});setBlockedSlots(bl);
       });
     }else{
-      // Any Available: slot is full only when ALL staff at this branch are booked
       const branchStaff=staff.filter(s=>s.branch_id===flow.branch?.id&&s.is_active!==false);
       const totalStaff=Math.max(branchStaff.length,1);
       supabase.from('bookings').select('booking_time').eq('booking_date',flow.date).eq('branch_id',flow.branch?.id).neq('status','cancelled')
@@ -849,7 +873,7 @@ function BookingFlow({flow,setBookingFlow,staff,services,createBooking,goBack,bp
                   <div key={s.id} onClick={()=>update({service:s,step:1})} style={{background:flow.service?.id===s.id?`${ACCENT}08`:CARD,borderRadius:16,padding:16,border:flow.service?.id===s.id?`2px solid ${ACCENT}`:`1px solid ${BORDER}`,cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center',minHeight:60}}>
                     <div style={{display:'flex',gap:12,alignItems:'center',flex:1,minWidth:0}}>
                       <div style={{width:44,height:44,borderRadius:12,background:`linear-gradient(135deg,${ACCENT}15,${ROSE}15)`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><CatIcon cat={s.category} size={20}/></div>
-                      <div><div style={{fontSize:15,fontWeight:600}}>{s.name}</div><div style={{fontSize:12,color:MUTED,marginTop:2}}>{s.duration}{s.duration_max&&s.duration_max!==s.duration?`â€“${s.duration_max}`:''} min</div></div>
+                      <div><div style={{fontSize:15,fontWeight:600}}>{s.name}</div><div style={{fontSize:12,color:MUTED,marginTop:2}}>{s.duration}{s.duration_max&&s.duration_max!==s.duration?`–${s.duration_max}`:''} min</div></div>
                     </div>
                     <div style={{fontSize:16,fontWeight:700,color:ACCENT,flexShrink:0}}>{fmtK(s.price)}</div>
                   </div>
@@ -905,7 +929,6 @@ function BookingFlow({flow,setBookingFlow,staff,services,createBooking,goBack,bp
                 <h4 style={{fontSize:14,fontWeight:600,marginBottom:10,color:MUTED}}>TIME</h4>
                 <div className="gb-time-grid">
                   {timeSlots.map(t=>{const sel=flow.time===t;const unavail=bookedSlots.includes(t)||blockedSlots.includes(t);
-                    // Grey out past times for today
                     const isPast = flow.date===todayStr() && t <= new Date().toTimeString().slice(0,5);
                     const blocked = unavail || isPast;
                     return(
@@ -929,7 +952,7 @@ function BookingFlow({flow,setBookingFlow,staff,services,createBooking,goBack,bp
                   <h4 style={{fontSize:18,fontWeight:700,fontFamily:'Fraunces,serif'}}>{flow.service?.name}</h4>
                 </div>
                 <div style={{padding:20}}>
-                  {[{label:'Location',value:flow.branch?.name,icon:'map'},{label:'Stylist',value:flow.staff?.name||'Any Available',icon:'user'},{label:'Date',value:flow.date?fmtDate(flow.date):'â€”',icon:'calendar'},{label:'Time',value:flow.time?fmtTime(flow.time):'â€”',icon:'clock'}].map(item=>(
+                  {[{label:'Location',value:flow.branch?.name,icon:'map'},{label:'Stylist',value:flow.staff?.name||'Any Available',icon:'user'},{label:'Date',value:flow.date?fmtDate(flow.date):'-',icon:'calendar'},{label:'Time',value:flow.time?fmtTime(flow.time):'-',icon:'clock'}].map(item=>(
                     <div key={item.label} style={{display:'flex',alignItems:'center',padding:'10px 0',borderBottom:`1px solid ${BORDER}`}}><Icon name={item.icon} size={16} color={MUTED}/><span style={{fontSize:13,color:MUTED,marginLeft:10,width:70}}>{item.label}</span><span style={{fontSize:14,fontWeight:600,flex:1}}>{item.value}</span></div>
                   ))}
                   <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',paddingTop:16}}>
@@ -937,19 +960,19 @@ function BookingFlow({flow,setBookingFlow,staff,services,createBooking,goBack,bp
                     <span style={{fontSize:24,fontWeight:700,fontFamily:'Fraunces,serif',color:ACCENT}}>{fmtK(flow.service?.price)}</span>
                   </div>
                   <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',paddingTop:8,borderTop:`1px dashed ${BORDER}`,marginTop:12}}>
-                      <span style={{fontSize:14,fontWeight:600,color:DARK}}>Deposit (pay now)</span>
-                      <span style={{fontSize:20,fontWeight:700,fontFamily:'Fraunces,serif',color:'#2e7d32'}}>{fmtK(deposit)}</span>
-                    </div>
+                    <span style={{fontSize:14,fontWeight:600,color:DARK}}>Deposit (pay now)</span>
+                    <span style={{fontSize:20,fontWeight:700,fontFamily:'Fraunces,serif',color:'#2e7d32'}}>{fmtK(deposit)}</span>
+                  </div>
                 </div>
               </div>
               <div style={{background:CARD,borderRadius:16,border:`1px solid ${BORDER}`,padding:16,marginBottom:16}}>
-                  <div style={{fontSize:14,fontWeight:600,marginBottom:4,display:'flex',alignItems:'center',gap:6}}><Icon name="smartphone" size={16} color={DARK}/> Mobile Money Number</div>
-                  <div style={{fontSize:12,color:MUTED,marginBottom:10,lineHeight:1.5}}>Enter the number to pay from. You'll receive a USSD prompt to approve <strong>{fmtK(deposit)}</strong>.</div>
-                  <input value={flow.payerPhone ?? client?.phone ?? ''} onChange={e=>update({payerPhone:e.target.value})} type="tel" autoComplete="tel" name="payerPhone" placeholder="e.g. 0971234567" style={{width:'100%',padding:'12px 14px',borderRadius:12,border:`1.5px solid ${BORDER}`,fontSize:15,background:BG,color:DARK,fontFamily:'inherit',letterSpacing:0.5}} />
-                  <div style={{display:'flex',gap:6,marginTop:8}}>
-                    {['MTN','Airtel','Zamtel'].map(n=><span key={n} style={{fontSize:10,fontWeight:600,color:MUTED,padding:'3px 8px',borderRadius:6,background:BG,border:`1px solid ${BORDER}`}}>{n}</span>)}
-                  </div>
+                <div style={{fontSize:14,fontWeight:600,marginBottom:4,display:'flex',alignItems:'center',gap:6}}><Icon name="smartphone" size={16} color={DARK}/> Mobile Money Number</div>
+                <div style={{fontSize:12,color:MUTED,marginBottom:10,lineHeight:1.5}}>Enter the number to pay from. You'll receive a USSD prompt to approve <strong>{fmtK(deposit)}</strong>.</div>
+                <input value={flow.payerPhone ?? client?.phone ?? ''} onChange={e=>update({payerPhone:e.target.value})} type="tel" autoComplete="tel" name="payerPhone" placeholder="e.g. 0971234567" style={{width:'100%',padding:'12px 14px',borderRadius:12,border:`1.5px solid ${BORDER}`,fontSize:15,background:BG,color:DARK,fontFamily:'inherit',letterSpacing:0.5}} />
+                <div style={{display:'flex',gap:6,marginTop:8}}>
+                  {['MTN','Airtel','Zamtel'].map(n=><span key={n} style={{fontSize:10,fontWeight:600,color:MUTED,padding:'3px 8px',borderRadius:6,background:BG,border:`1px solid ${BORDER}`}}>{n}</span>)}
                 </div>
+              </div>
               <div style={{background:CARD,borderRadius:16,border:`1px solid ${BORDER}`,padding:16,marginBottom:16}}>
                 <div style={{fontSize:14,fontWeight:600,marginBottom:8}}>Special Requests</div>
                 <textarea value={flow.clientNotes||''} onChange={e=>update({clientNotes:e.target.value})} placeholder="E.g. shoulder-length braids..." rows={3} style={{width:'100%',padding:'10px 12px',borderRadius:10,border:`1.5px solid ${BORDER}`,fontSize:13,background:BG,color:DARK,resize:'vertical',fontFamily:'inherit',minHeight:80}}/>
@@ -987,13 +1010,12 @@ function BookingFlow({flow,setBookingFlow,staff,services,createBooking,goBack,bp
           </div>
         )}
       </div>
-      {/* Payment Processing Overlay */}
       {paymentState && (
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center',padding:20,backdropFilter:'blur(4px)'}}>
           <div style={{background:CARD,borderRadius:24,padding:32,maxWidth:380,width:'100%',textAlign:'center',boxShadow:'0 20px 60px rgba(0,0,0,0.2)'}}>
             {paymentState.step==='failed'?(
               <>
-                <div style={{width:64,height:64,borderRadius:32,background:'#fce8e8',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px',}}><Icon name="close" size={28} color="#c62828"/></div>
+                <div style={{width:64,height:64,borderRadius:32,background:'#fce8e8',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px'}}><Icon name="close" size={28} color="#c62828"/></div>
                 <h3 style={{fontSize:18,fontWeight:700,fontFamily:'Fraunces,serif',marginBottom:8}}>
                   {paymentState.isDuplicate ? 'Payment Already Pending' : 'Payment Failed'}
                 </h3>
@@ -1024,7 +1046,7 @@ function BookingFlow({flow,setBookingFlow,staff,services,createBooking,goBack,bp
               </>
             ):paymentState.step==='success'?(
               <>
-                <div style={{width:64,height:64,borderRadius:32,background:'#e8f5e9',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px',}}><Icon name="check" size={28} color="#2e7d32"/></div>
+                <div style={{width:64,height:64,borderRadius:32,background:'#e8f5e9',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px'}}><Icon name="check" size={28} color="#2e7d32"/></div>
                 <h3 style={{fontSize:18,fontWeight:700,fontFamily:'Fraunces,serif',marginBottom:8}}>Payment Received!</h3>
                 <p style={{fontSize:14,color:MUTED}}>Creating your booking...</p>
               </>
@@ -1214,12 +1236,10 @@ function ProfilePage({client,clientBookings,branches,favorites,getBranch,navigat
     if(editForm.email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editForm.email)){showToast('Please enter a valid email address','error');return}
     setSaving(true);
     const area=editForm.area==='Other'?customArea:editForm.area;
-    // If email changed, update Supabase Auth first
     if(editForm.email && editForm.email !== client.email){
       const{error:authErr}=await supabase.auth.updateUser({email:editForm.email});
       if(authErr){setSaving(false);showToast('Couldn\'t update email: '+friendlyError(authErr.message),'error');return}
     }
-    // Update name in auth metadata too
     if(editForm.name && editForm.name !== client.name){
       await supabase.auth.updateUser({data:{name:editForm.name}});
     }
@@ -1229,7 +1249,6 @@ function ProfilePage({client,clientBookings,branches,favorites,getBranch,navigat
     showToast(editForm.email !== client.email ? 'Profile updated! Check your new email to confirm the change.' : 'Profile updated!');setEditing(false);if(refreshClient)refreshClient();
   };
 
-  const StarRow=({value,onChange,label})=>(<div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}><span style={{fontSize:13,color:MUTED}}>{label}</span><div style={{display:'flex',gap:4}}>{[1,2,3,4,5].map(s=><span key={s} onClick={()=>onChange(s)} className="star-btn" style={{color:s<=value?'#F59E0B':BORDER,minWidth:28,textAlign:'center'}}><Star size={20} fill={s<=value?'#F59E0B':'none'} stroke={s<=value?'#F59E0B':'#ccc'} strokeWidth={1.5}/></span>)}</div></div>);
   const iStyle={width:'100%',padding:'12px 16px',borderRadius:12,border:`1.5px solid ${BORDER}`,fontSize:14,background:BG,color:DARK,marginBottom:10,minHeight:44};
 
   return(
@@ -1259,7 +1278,7 @@ function ProfilePage({client,clientBookings,branches,favorites,getBranch,navigat
             {client.referral_code&&(
               <div style={{background:`linear-gradient(135deg,${ROSE}15,${ACCENT}15)`,borderRadius:18,padding:18,marginBottom:20,border:`1px solid ${ROSE}25`}}>
                 <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}><Icon name="gift" size={20} color={ACCENT}/><span style={{fontSize:15,fontWeight:700}}>Refer a Friend</span></div>
-                <p style={{fontSize:13,color:MUTED,lineHeight:1.5,marginBottom:12}}>Share your code â€” earn 50 pts when they book!</p>
+                <p style={{fontSize:13,color:MUTED,lineHeight:1.5,marginBottom:12}}>Share your code - earn 50 pts when they book!</p>
                 <div style={{display:'flex',gap:8,alignItems:'center'}}>
                   <div style={{flex:1,background:CARD,borderRadius:12,padding:'10px 14px',fontFamily:'monospace',fontSize:18,fontWeight:700,color:ACCENT,textAlign:'center',letterSpacing:2,border:`1px solid ${BORDER}`}}>{client.referral_code}</div>
                   <button onClick={()=>{navigator.clipboard?.writeText(client.referral_code);showToast('Copied!')}} style={{padding:'10px 16px',borderRadius:12,background:ACCENT,border:'none',color:'#fff',fontWeight:600,fontSize:13,cursor:'pointer',minHeight:44}}>Copy</button>
@@ -1293,8 +1312,8 @@ function ProfilePage({client,clientBookings,branches,favorites,getBranch,navigat
                 <h3 style={{fontSize:16,fontWeight:700,marginBottom:12}}>Leave a Review</h3>
                 {pendingReviews.slice(0,3).map(b=>{const br=getBranch(b.branch_id);const svc=getService?.(b.service_id);return(
                   <div key={b.id} onClick={()=>onReview(b)} style={{background:CARD,borderRadius:14,padding:14,marginBottom:8,border:`1px solid ${BORDER}`,cursor:'pointer',display:'flex',gap:12,alignItems:'center',minHeight:60}}>
-                    <div style={{width:40,height:40,borderRadius:10,background:`linear-gradient(135deg,${GOLD}30,${ACCENT}30)`,display:'flex',alignItems:'center',justifyContent:'center',}}><Icon name="star" size={16} color={GOLD}/></div>
-                    <div style={{flex:1}}><div style={{fontSize:14,fontWeight:600}}>{svc?.name||'Service'}</div><div style={{fontSize:12,color:MUTED}}>{br?.name} Â· {b.booking_date}</div></div>
+                    <div style={{width:40,height:40,borderRadius:10,background:`linear-gradient(135deg,${GOLD}30,${ACCENT}30)`,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon name="star" size={16} color={GOLD}/></div>
+                    <div style={{flex:1}}><div style={{fontSize:14,fontWeight:600}}>{svc?.name||'Service'}</div><div style={{fontSize:12,color:MUTED}}>{br?.name} · {b.booking_date}</div></div>
                     <Icon name="chevR" size={16} color={MUTED}/>
                   </div>
                 )})}
@@ -1305,7 +1324,7 @@ function ProfilePage({client,clientBookings,branches,favorites,getBranch,navigat
                 <h3 style={{fontSize:16,fontWeight:700,marginBottom:12}}>Favorites</h3>
                 {favBranches.map(b=>(
                   <div key={b.id} onClick={()=>navigate('salon',{branch:b})} style={{background:CARD,borderRadius:14,padding:14,marginBottom:8,border:`1px solid ${BORDER}`,cursor:'pointer',display:'flex',gap:12,alignItems:'center',minHeight:60}}>
-                    <div style={{width:40,height:40,borderRadius:10,background:`linear-gradient(135deg,${ACCENT}30,${ROSE}30)`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:16}}>âœ‚</div>
+                    <div style={{width:40,height:40,borderRadius:10,background:`linear-gradient(135deg,${ACCENT}30,${ROSE}30)`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:16}}>✂</div>
                     <div style={{flex:1}}><div style={{fontSize:14,fontWeight:600}}>{b.name}</div><div style={{fontSize:12,color:MUTED}}>{b.location||'Lusaka'}</div></div>
                     <Icon name="chevR" size={16} color={MUTED}/>
                   </div>
@@ -1337,7 +1356,7 @@ export default function LuminBookClient() {
   const [toast,setToast] = useState(null);
   const [selectedBranch,setSelectedBranch] = useState(null);
   const [bookingFlow,setBookingFlow] = useState(null);
-  const [paymentState,setPaymentState] = useState(null); // null | {step:'initiating'|'waiting'|'verifying'|'success'|'failed'|'cancelling', message, paymentId}
+  const [paymentState,setPaymentState] = useState(null);
   const isProcessingPayment = useRef(false);
   const paymentPollAbort = useRef(false);
   const deepLinkHandled = useRef(false);
@@ -1354,7 +1373,6 @@ export default function LuminBookClient() {
   const [reviewSubmitting,setReviewSubmitting] = useState(false);
   const [reviewedIds,setReviewedIds] = useState(new Set());
   const [serviceCompare,setServiceCompare] = useState(null);
-
   const [showResetPassword, setShowResetPassword] = useState(false);
 
   useEffect(() => {
@@ -1366,11 +1384,9 @@ export default function LuminBookClient() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Persist favorites & notifications to localStorage
   useEffect(() => { try { localStorage.setItem('lb_favorites', JSON.stringify(favorites)); } catch {} }, [favorites]);
   useEffect(() => { try { localStorage.setItem('lb_notifications', JSON.stringify(notifications)); } catch {} }, [notifications]);
 
-  // Offline detection
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   useEffect(() => {
     const goOff = () => setIsOffline(true);
@@ -1385,7 +1401,6 @@ export default function LuminBookClient() {
     setAuthUser(null);setClient({id:null,name:'Guest',phone:'',email:''});setBookings([]);setReviewedIds(new Set());setPage('home');
   };
 
-  // ---- CATALOG: branches, services, staff â€” loaded ONCE ----
   const fetchCatalog = async () => {
     const [b,sv,st] = await Promise.all([
       supabase.from('branches').select('*').eq('is_active',true).eq('approval_status','approved'),
@@ -1396,12 +1411,9 @@ export default function LuminBookClient() {
     catalogLoaded.current=true;
   };
 
-  // ---- MY DATA: client record + client's bookings + reviewed IDs ----
   const fetchMyData = async (user) => {
     const u = user || authUser;
     if(!u) return;
-
-    // Find client record: by auth_user_id first, then by email
     let myClient = null;
     const{data:linked}=await supabase.from('clients').select('*').eq('auth_user_id',u.id).single();
     if(linked) myClient=linked;
@@ -1413,15 +1425,11 @@ export default function LuminBookClient() {
         else myClient=byEmail;
       }
       else {
-        // FALLBACK: No client record exists â€” create one now
-        // This catches cases where the DB trigger didn't fire or the signup insert failed
-        // Use upsert to handle race conditions (multiple tabs, rapid auth events)
         const code=(((u.user_metadata?.name||u.email).replace(/[^a-zA-Z]/g,'')).slice(0,3)+u.id.slice(0,4)).toUpperCase();
         const ins={auth_user_id:u.id,name:u.user_metadata?.name||u.email.split('@')[0],phone:u.user_metadata?.phone||'',email:u.email.toLowerCase(),referral_code:code,lumin_points:0,total_points_earned:0,total_bookings:0,total_spent:0,is_active:true,account_status:'active',created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
         const{data:created,error:createErr}=await supabase.from('clients').upsert(ins,{onConflict:'auth_user_id'}).select().single();
         if(created) myClient=created;
         else {
-          // If upsert failed, try fetching once more (another tab may have just created it)
           const{data:retry}=await supabase.from('clients').select('*').eq('auth_user_id',u.id).single();
           if(retry) myClient=retry;
           else {
@@ -1432,8 +1440,6 @@ export default function LuminBookClient() {
       }
     }
     setClient(myClient);
-
-    // Fetch only THIS client's bookings
     if(myClient?.id){
       const [bk,rv] = await Promise.all([
         supabase.from('bookings').select('*').eq('client_id',myClient.id).order('booking_date',{ascending:false}).limit(200),
@@ -1446,19 +1452,16 @@ export default function LuminBookClient() {
     }
   };
 
-  // Debounced version for realtime events (prevents rapid-fire refetches)
   const fetchMyDataDebounced = () => {
     if(fetchDebounceRef.current) clearTimeout(fetchDebounceRef.current);
     fetchDebounceRef.current = setTimeout(()=>fetchMyData(), 300);
   };
 
-  // ---- REVIEWS: all visible reviews (needed for branch ratings) ----
   const fetchReviews = async () => {
     const{data}=await supabase.from('reviews').select('*').eq('is_visible',true).order('created_at',{ascending:false}).limit(500);
     setReviews(data||[]);
   };
 
-  // ---- INITIAL LOAD ----
   useEffect(() => {
     if(!authChecked) return;
     (async()=>{
@@ -1472,7 +1475,6 @@ export default function LuminBookClient() {
     })();
   }, [authChecked,authUser]);
 
-  // ---- URL & DEEP LINK HELPERS ----
   const getPageUrl = useCallback((pg, data) => {
     if(pg === 'salon' && data?.branch) return '/' + (data.branch.booking_slug || data.branch.id);
     if(pg === 'booking') return '/book';
@@ -1489,13 +1491,11 @@ export default function LuminBookClient() {
     if(path === 'bookings') return { pg: 'bookings' };
     if(path === 'profile') return { pg: 'profile' };
     if(path === 'book') return { pg: 'booking' };
-    // Try to resolve as a salon slug
     const match = branches.find(b => b.booking_slug && (b.booking_slug === path || b.booking_slug === path.replace(/-/g,'')));
     if(match) return { pg: 'salon', branch: match };
     return { pg: 'home' };
   }, [branches]);
 
-  // ---- DEEP LINK: luminbook.app/business-slug â†’ go straight to business page ----
   useEffect(() => {
     if(loading || deepLinkHandled.current || !branches.length) return;
     const path = initialPath.current;
@@ -1506,8 +1506,7 @@ export default function LuminBookClient() {
       if(resolved.branch) setSelectedBranch(resolved.branch);
       setPage(resolved.pg);
       setNavHistory(resolved.pg !== 'home' ? ['home'] : []);
-      // Replace initial state so back from deep link goes to home
-      try { window.history.replaceState({pg: resolved.pg, branchId: resolved.branch?.id}, '', '/' + path); } catch(e) { /* ignore */ }
+      try { window.history.replaceState({pg: resolved.pg, branchId: resolved.branch?.id}, '', '/' + path); } catch(e) {}
     }
   }, [loading, branches, resolveUrlToPage]);
 
@@ -1524,11 +1523,7 @@ export default function LuminBookClient() {
           const b=payload.new;
           if(b.status==='confirmed'){showToastFn('Booking confirmed!');pushNotif('Booking Confirmed',`Your appointment on ${fmtDate(b.booking_date)} at ${fmtTime(b.booking_time)} is confirmed!`,'success')}
           else if(b.status==='cancelled'&&b.cancelled_by==='business'){showToastFn('Your booking was cancelled by the studio','error');pushNotif('Booking Cancelled',`Your appointment on ${fmtDate(b.booking_date)} was cancelled by the studio. If you paid a deposit, a refund will be processed manually.`,'error')}
-          else if(b.status==='completed'){
-            // LuminPoints are awarded server-side by trigger (award_lumin_points_on_complete)
-            // Don't display exact amount here since it may differ from server calculation
-            showToastFn('Booking complete! LuminPoints earned');pushNotif('Complete','Your appointment is done! LuminPoints have been added to your account. Leave a review for bonus points!','success');
-          }
+          else if(b.status==='completed'){showToastFn('Booking complete! LuminPoints earned');pushNotif('Complete','Your appointment is done! LuminPoints have been added to your account. Leave a review for bonus points!','success')}
         }
         fetchMyDataDebounced();
       }).subscribe();
@@ -1541,40 +1536,23 @@ export default function LuminBookClient() {
   const branchReviews = bid => reviews.filter(r=>r.branch_id===bid);
   const branchStaff = bid => staff.filter(s=>s.branch_id===bid);
   const branchAvgRating = bid => {const rv=branchReviews(bid);if(!rv.length) return 'New';return (rv.reduce((s,r)=>s+(r.rating_overall||0),0)/rv.length).toFixed(1)};
-  const clientBookings = bookings; // Already scoped to client in fetchMyData
+  const clientBookings = bookings;
   const upcomingBookings = clientBookings.filter(b=>b.booking_date>=todayStr()&&!['cancelled','completed','no_show'].includes(b.status));
   const pastBookings = clientBookings.filter(b=>b.status==='completed'||b.status==='no_show'||(b.booking_date<todayStr()&&b.status!=='cancelled'));
   const categories = ['All',...new Set(services.map(s=>s.category).filter(Boolean))];
 
-  // Fetch reviewed booking IDs â€” handled inside fetchMyData
-
-  // Review handler
   const onReview=(booking)=>{setReviewModal(booking);setReviewForm({rating:5,text:''})};
   const submitReview=async()=>{
     if(!reviewModal||reviewSubmitting)return;
     setReviewSubmitting(true);
     const{error}=await supabase.from('reviews').insert({client_id:client.id,branch_id:reviewModal.branch_id,service_id:reviewModal.service_id,staff_id:reviewModal.staff_id,booking_id:reviewModal.id,rating_overall:reviewForm.rating,rating_average:reviewForm.rating,review_text:reviewForm.text,is_visible:false,moderation_status:'pending',can_edit_until:new Date(Date.now()+7*86400000).toISOString(),created_at:new Date().toISOString(),updated_at:new Date().toISOString()});
     setReviewSubmitting(false);
-    if(!error){
-      const pts=5+(reviewForm.text?.length>20?5:0);
-      showToastFn(`Review submitted! +${pts} pts â€” it'll appear once approved`);fetchMyData();fetchReviews()
-    }
+    if(!error){const pts=5+(reviewForm.text?.length>20?5:0);showToastFn(`Review submitted! +${pts} pts - it'll appear once approved`);fetchMyData();fetchReviews()}
     else showToastFn('Couldn\'t submit review. Please try again.','error');
     setReviewModal(null);
   };
 
-  // Service compare: show other salons offering same service
   const onServiceCompare=(svc)=>{setServiceCompare(svc)};
-  const compareResults=serviceCompare?services.filter(s=>{
-    if(s.id===serviceCompare.id) return false;
-    const a=serviceCompare.name.toLowerCase(), b=s.name.toLowerCase();
-    // Exact match, or one contains the other, or same category + shared words
-    if(a===b) return true;
-    if(a.includes(b)||b.includes(a)) return true;
-    const wordsA=a.split(/\s+/), wordsB=b.split(/\s+/);
-    const shared=wordsA.filter(w=>w.length>2&&wordsB.includes(w));
-    return s.category===serviceCompare.category && shared.length>=1;
-  }):[];
 
   const [reminders,setReminders] = useState([]);
   useEffect(() => {
@@ -1583,39 +1561,27 @@ export default function LuminBookClient() {
     setReminders(upcomingBookings.filter(b=>{const dt=new Date(`${b.booking_date}T${b.booking_time||'09:00'}`);return(dt-now)/3600000>0&&(dt-now)/3600000<=24}).map(b=>({...b,hoursUntil:Math.round((new Date(`${b.booking_date}T${b.booking_time||'09:00'}`)-new Date())/3600000)})));
   }, [upcomingBookings.length]);
 
-
-
   const navigate = (pg,data) => {
     setNavHistory(h=>[...h,page]);
     setPage(pg);
     if(data?.branch)setSelectedBranch(data.branch);
     if(data?.bookingFlow)setBookingFlow(data.bookingFlow);
     const url = getPageUrl(pg, data);
-    try { window.history.pushState({pg, branchId: data?.branch?.id}, '', url); } catch(e) { /* ignore */ }
+    try { window.history.pushState({pg, branchId: data?.branch?.id}, '', url); } catch(e) {}
   };
   const goBack = () => {
-    if(navHistory.length > 0) {
-      window.history.back(); // Let popstate handler manage state
-    } else {
-      setPage('home');
-      try { window.history.replaceState({pg:'home'}, '', '/'); } catch(e) { /* ignore */ }
-    }
+    if(navHistory.length > 0) { window.history.back(); }
+    else { setPage('home'); try { window.history.replaceState({pg:'home'}, '', '/'); } catch(e) {} }
   };
 
-  // Handle browser back/forward buttons
   useEffect(() => {
     const onPopState = (e) => {
       if(e.state?.pg) {
-        // Restore from history state
         const pg = e.state.pg;
         setPage(pg);
-        if(e.state.branchId) {
-          const br = branches.find(b => b.id === e.state.branchId);
-          if(br) setSelectedBranch(br);
-        }
+        if(e.state.branchId) { const br = branches.find(b => b.id === e.state.branchId); if(br) setSelectedBranch(br); }
         setNavHistory(h => h.length > 0 ? h.slice(0, -1) : []);
       } else {
-        // No state â€” resolve from URL
         const resolved = resolveUrlToPage(window.location.pathname);
         setPage(resolved.pg);
         if(resolved.branch) setSelectedBranch(resolved.branch);
@@ -1625,6 +1591,7 @@ export default function LuminBookClient() {
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
   }, [branches, resolveUrlToPage]);
+
   const toggleFav = bid => setFavorites(f=>f.includes(bid)?f.filter(x=>x!==bid):[...f,bid]);
 
   const cancelBooking = async (id) => {
@@ -1633,18 +1600,13 @@ export default function LuminBookClient() {
     const{error}=await supabase.from('bookings').update({status:'cancelled',cancelled_at:new Date().toISOString(),cancellation_reason:'Cancelled by client',cancelled_by:'client',updated_at:new Date().toISOString()}).eq('id',id);
     if(!error){
       showToastFn('Booking cancelled');
-      // If deposit was paid, notify admin to issue manual refund
       if(bk?.deposit_paid && bk?.deposit_amount > 0){
         try{
           const{data:{session}}=await supabase.auth.getSession();
           const apiKey=supabase.supabaseKey||'';
           const br=branches.find(b=>b.id===bk.branch_id);
           const svc=services.find(s=>s.id===bk.service_id);
-          await fetch(supabase.supabaseUrl+'/functions/v1/sms-notify',{
-            method:'POST',
-            headers:{'Content-Type':'application/json','Authorization':'Bearer '+(session?.access_token||''),'apikey':apiKey},
-            body:JSON.stringify({type:'admin_refund_request',branch_id:bk.branch_id,booking_id:id,client_name:client?.name||'Client',client_phone:client?.phone||'',service_name:svc?.name||'Service',deposit_amount:bk.deposit_amount,reason:'Cancelled by client',branch_name:br?.name||'Studio'})
-          });
+          await fetch(supabase.supabaseUrl+'/functions/v1/sms-notify',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+(session?.access_token||''),'apikey':apiKey},body:JSON.stringify({type:'admin_refund_request',branch_id:bk.branch_id,booking_id:id,client_name:client?.name||'Client',client_phone:client?.phone||'',service_name:svc?.name||'Service',deposit_amount:bk.deposit_amount,reason:'Cancelled by client',branch_name:br?.name||'Studio'})});
           showToastFn('Refund request sent to admin. You will be refunded manually.');
         }catch(e){console.warn('Refund SMS notification failed:',e.message)}
       }
@@ -1655,11 +1617,8 @@ export default function LuminBookClient() {
   const SUPABASE_URL = supabase.supabaseUrl;
 
   const createBooking = async (flow) => {
-    // Prevent double-clicks
     if (isProcessingPayment.current) return;
     isProcessingPayment.current = true;
-
-    // Check account status â€” re-fetch from DB to catch bans applied mid-session
     if(client?.id){
       const{data:freshClient}=await supabase.from('clients').select('account_status').eq('id',client.id).single();
       if(freshClient && freshClient.account_status !== 'active'){
@@ -1668,103 +1627,60 @@ export default function LuminBookClient() {
         return;
       }
     }
-
     const svc = flow.service;
     const deposit = parseFloat(svc?.deposit_amount) || parseFloat(flow.branch?.default_deposit) || 100;
     const payerPhone = flow.payerPhone ?? client.phone ?? '';
-
-    // Double-booking guard
     if(flow.staff?.id){
       const{data:ex}=await supabase.from('bookings').select('id').eq('staff_id',flow.staff.id).eq('booking_date',flow.date).eq('booking_time',flow.time).neq('status','cancelled').limit(1);
-      if(ex?.length){isProcessingPayment.current=false;showToastFn('Slot just booked â€” pick another','error');return}
+      if(ex?.length){isProcessingPayment.current=false;showToastFn('Slot just booked - pick another','error');return}
     }else{
       const branchStaff=staff.filter(s=>s.branch_id===flow.branch?.id&&s.is_active!==false);
       const{data:ex}=await supabase.from('bookings').select('id').eq('branch_id',flow.branch.id).eq('booking_date',flow.date).eq('booking_time',flow.time).neq('status','cancelled');
-      if((ex?.length||0)>=Math.max(branchStaff.length,1)){isProcessingPayment.current=false;showToastFn('All stylists booked at this time â€” pick another','error');return}
+      if((ex?.length||0)>=Math.max(branchStaff.length,1)){isProcessingPayment.current=false;showToastFn('All stylists booked at this time - pick another','error');return}
     }
-
-    // Reschedule â€” no payment needed
     if(flow.rescheduleId){
       const{error}=await supabase.from('bookings').update({booking_date:flow.date,booking_time:flow.time,staff_id:flow.staff?.id||null,status:'pending',updated_at:new Date().toISOString()}).eq('id',flow.rescheduleId);
       isProcessingPayment.current=false;
       if(!error){showToastFn('Rescheduled!');fetchMyData();setBookingFlow(null);setPage('bookings')}else showToastFn('Couldn\'t reschedule. Please try again.','error');return;
     }
-
-    // If deposit required, initiate payment first
     if (deposit > 0) {
       if (!payerPhone) { isProcessingPayment.current=false; showToastFn('Enter your mobile money number to pay', 'error'); return; }
-      // Validate Zambian phone number format
       const cleanPhone = payerPhone.replace(/[\s\-()]/g, '');
       if (!/^(?:\+?260|0)[79]\d{8}$/.test(cleanPhone)) {
         isProcessingPayment.current=false;
         showToastFn('Please enter a valid Zambian phone number (e.g. 0971234567)', 'error');
         return;
       }
-
       setPaymentState({ step: 'initiating', message: 'Initiating payment...' });
       paymentPollAbort.current = false;
-
       try {
         const { data: { session } } = await supabase.auth.getSession();
         const apiKey = supabase.supabaseKey || '';
         const res = await fetch(SUPABASE_URL + '/functions/v1/process-payment', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (session?.access_token || ''), 'apikey': apiKey },
-          body: JSON.stringify({
-            action: 'initiate',
-            branch_id: flow.branch.id,
-            amount: deposit,
-            payer_phone: payerPhone,
-            payment_type: 'booking_deposit',
-            booking_intent: {
-              branch_id: flow.branch.id,
-              service_id: svc.id,
-              staff_id: flow.staff?.id || null,
-              booking_date: flow.date,
-              booking_time: flow.time,
-              duration: svc.duration_max || svc.duration || 60,
-              total_amount: parseFloat(svc.price) || 0,
-              client_notes: flow.clientNotes || null,
-              recurring: flow.recurring || false,
-              recurring_type: flow.recurringType || null,
-              recurring_until: flow.recurringUntil || null
-            }
-          })
+          body: JSON.stringify({action:'initiate',branch_id:flow.branch.id,amount:deposit,payer_phone:payerPhone,payment_type:'booking_deposit',booking_intent:{branch_id:flow.branch.id,service_id:svc.id,staff_id:flow.staff?.id||null,booking_date:flow.date,booking_time:flow.time,duration:svc.duration_max||svc.duration||60,total_amount:parseFloat(svc.price)||0,client_notes:flow.clientNotes||null,recurring:flow.recurring||false,recurring_type:flow.recurringType||null,recurring_until:flow.recurringUntil||null}})
         });
         const data = await res.json();
-
         if (data.error || !data.success) {
           isProcessingPayment.current = false;
-          // Detect duplicate/pending payment
           const errMsg = (data.error || '').toLowerCase();
           if (errMsg.includes('recently initiated') || errMsg.includes('pending') || errMsg.includes('duplicate')) {
-            setPaymentState({ 
-              step: 'failed', 
-              message: 'You already have a payment in progress. Wait for it to complete, or cancel it and try again.',
-              isDuplicate: true,
-              existingPaymentId: data.payment_id || null
-            });
+            setPaymentState({step:'failed',message:'You already have a payment in progress. Wait for it to complete, or cancel it and try again.',isDuplicate:true,existingPaymentId:data.payment_id||null});
           } else {
             setPaymentState({ step: 'failed', message: friendlyError(data.error) || 'Couldn\'t start the payment. Please try again.' });
           }
           return;
         }
-
-        // Payment initiated â€” now poll for verification
         setPaymentState({ step: 'waiting', message: 'Approve the payment on your phone...', paymentId: data.payment_id });
-
         const paymentId = data.payment_id;
         let attempts = 0;
-        const maxAttempts = 24; // 2 minutes (5s intervals)
-
+        const maxAttempts = 24;
         const pollVerify = async () => {
-          if (paymentPollAbort.current) return; // User cancelled
+          if (paymentPollAbort.current) return;
           attempts++;
           setPaymentState(ps => ({ ...ps, step: 'verifying', message: `Checking payment... (${attempts}/${maxAttempts})` }));
-
           try {
-            // Get fresh session each poll â€” the original session from createBooking() 
-            // may have expired during the 2-minute polling window
             const { data: { session: freshSession } } = await supabase.auth.getSession();
             const freshApiKey = supabase.supabaseKey || '';
             const vRes = await fetch(SUPABASE_URL + '/functions/v1/process-payment', {
@@ -1773,40 +1689,27 @@ export default function LuminBookClient() {
               body: JSON.stringify({ action: 'verify', payment_id: paymentId })
             });
             const vData = await vRes.json();
-
             if (vData.status === 'successful') {
               setPaymentState({ step: 'success', message: 'Payment received! Creating booking...' });
-
-              // Server creates the booking from booking_intent now
-              // Only create client-side as a fallback if server didn't
               if (!vData.booking_created && !vData.booking_id) {
                 await createBookingRecords(flow, svc, paymentId, deposit);
               } else {
-                // Server already created the booking â€” just refresh and navigate
                 isProcessingPayment.current = false;
-                showToastFn('Booking confirmed! ðŸŽ‰');
-                fetchMyData();
-                setBookingFlow(null);
-                setPage('bookings');
-                setPaymentState(null);
+                showToastFn('Booking confirmed! 🎉');
+                fetchMyData();setBookingFlow(null);setPage('bookings');setPaymentState(null);
               }
               return;
             }
-
             if (vData.status === 'failed') {
               isProcessingPayment.current = false;
               setPaymentState({ step: 'failed', message: vData.message || 'Payment was not approved. Please try again.' });
               return;
             }
-
-            // Still pending
             if (attempts >= maxAttempts) {
               isProcessingPayment.current = false;
-              setPaymentState({ step: 'failed', message: 'Payment timed out. No money was deducted â€” you can safely try again. If you were charged, please contact support.' });
+              setPaymentState({ step: 'failed', message: 'Payment timed out. No money was deducted - you can safely try again. If you were charged, please contact support.' });
               return;
             }
-
-            // Continue polling
             setPaymentState(ps => ({ ...ps, step: 'waiting', message: 'Approve the payment on your phone...' }));
             setTimeout(pollVerify, 5000);
           } catch (e) {
@@ -1814,16 +1717,12 @@ export default function LuminBookClient() {
             setPaymentState({ step: 'failed', message: 'Couldn\'t verify your payment. Please check your mobile money balance and try again.' });
           }
         };
-
-        // Start polling after 5 seconds
         setTimeout(pollVerify, 5000);
-
       } catch (e) {
         isProcessingPayment.current = false;
         setPaymentState({ step: 'failed', message: e.message?.includes('fetch') || e.message?.includes('network') ? 'Connection error. Check your internet and try again.' : 'Something went wrong. Please try again.' });
       }
     } else {
-      // No deposit â€” create booking directly
       await createBookingRecords(flow, svc, null, 0);
       isProcessingPayment.current = false;
     }
@@ -1831,78 +1730,51 @@ export default function LuminBookClient() {
 
   const createBookingRecords = async (flow, svc, paymentId, depositAmount) => {
     const baseData = {
-      branch_id: flow.branch.id, client_id: client.id, service_id: svc.id,
-      staff_id: flow.staff?.id || null, booking_date: flow.date, booking_time: flow.time,
-      duration: svc.duration_max || svc.duration || 60, total_amount: parseFloat(svc.price) || 0,
-      deposit_amount: depositAmount || 0, deposit_paid: depositAmount > 0, deposit_paid_at: depositAmount > 0 ? new Date().toISOString() : null,
-      payment_id: paymentId || null, payment_status: depositAmount > 0 ? 'paid' : 'unpaid',
-      client_notes: flow.clientNotes || null, status: depositAmount > 0 ? 'confirmed' : 'pending',
-      created_at: new Date().toISOString(), updated_at: new Date().toISOString()
+      branch_id:flow.branch.id,client_id:client.id,service_id:svc.id,staff_id:flow.staff?.id||null,
+      booking_date:flow.date,booking_time:flow.time,duration:svc.duration_max||svc.duration||60,
+      total_amount:parseFloat(svc.price)||0,deposit_amount:depositAmount||0,deposit_paid:depositAmount>0,
+      deposit_paid_at:depositAmount>0?new Date().toISOString():null,payment_id:paymentId||null,
+      payment_status:depositAmount>0?'paid':'unpaid',client_notes:flow.clientNotes||null,
+      status:depositAmount>0?'confirmed':'pending',created_at:new Date().toISOString(),updated_at:new Date().toISOString()
     };
-
     if (flow.recurring && flow.recurringType) {
       const rid = crypto.randomUUID();
-      const weeks = flow.recurringType === 'weekly' ? 1 : flow.recurringType === 'biweekly' ? 2 : 4;
-      const until = flow.recurringUntil || new Date(new Date(flow.date).getTime() + weeks * 4 * 7 * 86400000).toISOString().slice(0, 10);
-      const allDates = []; let d = new Date(flow.date);
-      while (d.toISOString().slice(0, 10) <= until) { allDates.push(d.toISOString().slice(0, 10)); d = new Date(d.getTime() + weeks * 7 * 86400000); }
-      const { data: existing } = await supabase.from('bookings').select('booking_date,booking_time').eq('branch_id', flow.branch.id).eq('booking_time', flow.time).in('booking_date', allDates).neq('status', 'cancelled');
-      const conflictDates = new Set((existing || []).map(b => b.booking_date));
-      const bks = allDates.filter(dt => !conflictDates.has(dt)).map((dt, i) => ({
-        ...baseData, booking_date: dt, recurring_id: rid, recurring_type: flow.recurringType, recurring_until: until,
-        // Only first booking has the deposit payment
-        deposit_paid: i === 0 ? baseData.deposit_paid : false,
-        deposit_paid_at: i === 0 ? baseData.deposit_paid_at : null,
-        payment_id: i === 0 ? baseData.payment_id : null,
-        payment_status: i === 0 ? baseData.payment_status : 'unpaid',
-        status: i === 0 ? baseData.status : 'pending'
-      }));
-      if (!bks.length) { isProcessingPayment.current=false; showToastFn('All recurring dates are already booked', 'error'); setPaymentState(null); return; }
-      const skipped = allDates.length - bks.length;
-      const { error } = await supabase.from('bookings').insert(bks);
-      isProcessingPayment.current = false;
-      if (!error) { showToastFn(`${bks.length} bookings created!${skipped ? ' (' + skipped + ' skipped â€” conflicts)' : ''}!`); fetchMyData(); setBookingFlow(null); setPage('bookings'); }
-      else showToastFn('Couldn\'t create bookings. Please try again.', 'error');
+      const weeks = flow.recurringType==='weekly'?1:flow.recurringType==='biweekly'?2:4;
+      const until = flow.recurringUntil || new Date(new Date(flow.date).getTime()+weeks*4*7*86400000).toISOString().slice(0,10);
+      const allDates=[]; let d=new Date(flow.date);
+      while(d.toISOString().slice(0,10)<=until){allDates.push(d.toISOString().slice(0,10));d=new Date(d.getTime()+weeks*7*86400000);}
+      const{data:existing}=await supabase.from('bookings').select('booking_date,booking_time').eq('branch_id',flow.branch.id).eq('booking_time',flow.time).in('booking_date',allDates).neq('status','cancelled');
+      const conflictDates=new Set((existing||[]).map(b=>b.booking_date));
+      const bks=allDates.filter(dt=>!conflictDates.has(dt)).map((dt,i)=>({...baseData,booking_date:dt,recurring_id:rid,recurring_type:flow.recurringType,recurring_until:until,deposit_paid:i===0?baseData.deposit_paid:false,deposit_paid_at:i===0?baseData.deposit_paid_at:null,payment_id:i===0?baseData.payment_id:null,payment_status:i===0?baseData.payment_status:'unpaid',status:i===0?baseData.status:'pending'}));
+      if(!bks.length){isProcessingPayment.current=false;showToastFn('All recurring dates are already booked','error');setPaymentState(null);return;}
+      const skipped=allDates.length-bks.length;
+      const{error}=await supabase.from('bookings').insert(bks);
+      isProcessingPayment.current=false;
+      if(!error){showToastFn(`${bks.length} bookings created!${skipped?' ('+skipped+' skipped - conflicts)':''}!`);fetchMyData();setBookingFlow(null);setPage('bookings');}
+      else showToastFn('Couldn\'t create bookings. Please try again.','error');
     } else {
-      const { data: newBooking, error } = await supabase.from('bookings').insert(baseData).select('id').single();
-      if (!error && newBooking) {
-        // Link payment to booking
-        if (paymentId) await supabase.from('payments').update({ booking_id: newBooking.id }).eq('id', paymentId);
-        isProcessingPayment.current = false;
-        showToastFn('Booking confirmed! ðŸŽ‰'); fetchMyData(); setBookingFlow(null); setPage('bookings');
+      const{data:newBooking,error}=await supabase.from('bookings').insert(baseData).select('id').single();
+      if(!error&&newBooking){
+        if(paymentId) await supabase.from('payments').update({booking_id:newBooking.id}).eq('id',paymentId);
+        isProcessingPayment.current=false;
+        showToastFn('Booking confirmed! 🎉');fetchMyData();setBookingFlow(null);setPage('bookings');
       }
-      else { isProcessingPayment.current = false; showToastFn('Couldn\'t create your booking. Please try again.', 'error'); }
+      else{isProcessingPayment.current=false;showToastFn('Couldn\'t create your booking. Please try again.','error');}
     }
     setPaymentState(null);
   };
 
   const cancelPayment = async () => {
-    paymentPollAbort.current = true; // Stop polling immediately
+    paymentPollAbort.current = true;
     const paymentId = paymentState?.paymentId;
-    if (!paymentId) {
-      // No payment ID â€” just clear the state
-      isProcessingPayment.current = false;
-      setPaymentState(null);
-      return;
-    }
+    if (!paymentId) { isProcessingPayment.current=false; setPaymentState(null); return; }
     setPaymentState(ps => ({ ...ps, step: 'cancelling', message: 'Cancelling payment...' }));
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const apiKey = supabase.supabaseKey || '';
-      const res = await fetch(SUPABASE_URL + '/functions/v1/process-payment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (session?.access_token || ''), 'apikey': apiKey },
-        body: JSON.stringify({ action: 'cancel', payment_id: paymentId })
-      });
-      const data = await res.json();
-      if (data.error && !data.success) {
-        console.warn('Cancel payment error:', data.error);
-      }
-    } catch (e) {
-      console.warn('Cancel payment fetch error:', e.message);
-    }
-    isProcessingPayment.current = false;
-    setPaymentState(null);
+      const{data:{session}}=await supabase.auth.getSession();
+      const apiKey=supabase.supabaseKey||'';
+      await fetch(SUPABASE_URL+'/functions/v1/process-payment',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+(session?.access_token||''),'apikey':apiKey},body:JSON.stringify({action:'cancel',payment_id:paymentId})});
+    } catch(e) { console.warn('Cancel payment fetch error:',e.message); }
+    isProcessingPayment.current=false;setPaymentState(null);
   };
 
   const rescheduleBooking = (bk) => {
@@ -1911,10 +1783,8 @@ export default function LuminBookClient() {
     setPage('booking');
   };
 
-  // Auth gate
   if(!authChecked) return(<div style={{minHeight:'100vh',background:BG,display:'flex',alignItems:'center',justifyContent:'center'}}><style>{css}</style><div style={{display:'flex',gap:6}}>{[0,1,2].map(i=><div key={i} style={{width:8,height:8,borderRadius:4,background:ACCENT,animation:`pulse 1.2s ease ${i*.2}s infinite`}}/>)}</div></div>);
 
-  // Password recovery â€” must render before other guards
   if(showResetPassword) return(
     <div style={{minHeight:'100vh',background:BG,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
       <style>{css}</style>
@@ -1944,11 +1814,11 @@ export default function LuminBookClient() {
   return(
     <>
       <style>{css}</style>
-      {isOffline&&<div role="alert" style={{position:'fixed',top:0,left:0,right:0,zIndex:2100,background:'#c62828',color:'#fff',textAlign:'center',padding:'8px 16px',fontSize:13,fontWeight:600,display:'flex',alignItems:'center',justifyContent:'center',gap:6}}><Icon name="xCircle" size={14} color="#fff"/>You're offline â€” check your connection</div>}
+      {isOffline&&<div role="alert" style={{position:'fixed',top:0,left:0,right:0,zIndex:2100,background:'#c62828',color:'#fff',textAlign:'center',padding:'8px 16px',fontSize:13,fontWeight:600,display:'flex',alignItems:'center',justifyContent:'center',gap:6}}><Icon name="xCircle" size={14} color="#fff"/>You're offline - check your connection</div>}
       <AppShell page={page} setPage={pg=>{setNavHistory([]);setPage(pg)}} client={client} unreadCount={unreadCount} onNotifClick={()=>setShowNotifs(true)} onLogout={handleLogout} bp={bp} onNavTo={(pg)=>{
         setNavHistory([]);setPage(pg);
         const url = getPageUrl(pg);
-        try { window.history.pushState({pg}, '', url); } catch(e) { /* ignore */ }
+        try { window.history.pushState({pg}, '', url); } catch(e) {}
       }}>
         <div key={page} className="page-in" role="main">{pages[page]||pages.home}</div>
       </AppShell>
@@ -1969,14 +1839,13 @@ export default function LuminBookClient() {
           </div>
         ):<EmptyState icon="bell" title="No notifications" sub="You're all caught up!"/>}
       </BottomSheet>
-      {/* Review Modal */}
       <BottomSheet open={!!reviewModal} onClose={()=>setReviewModal(null)} title="Write a Review">
         {reviewModal&&(()=>{
           const br=getBranch(reviewModal.branch_id);const svc=getService(reviewModal.service_id);
           return(<>
             <div style={{background:`${ACCENT}08`,borderRadius:12,padding:12,marginBottom:16,display:'flex',gap:10,alignItems:'center'}}>
-              <div style={{width:40,height:40,borderRadius:10,background:`linear-gradient(135deg,${ACCENT}30,${ROSE}30)`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:16,flexShrink:0}}>âœ‚</div>
-              <div><div style={{fontSize:14,fontWeight:700}}>{br?.name||'Studio'}</div><div style={{fontSize:12,color:MUTED}}>{svc?.name||'Service'} Â· {reviewModal.booking_date}</div></div>
+              <div style={{width:40,height:40,borderRadius:10,background:`linear-gradient(135deg,${ACCENT}30,${ROSE}30)`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:16,flexShrink:0}}>✂</div>
+              <div><div style={{fontSize:14,fontWeight:700}}>{br?.name||'Studio'}</div><div style={{fontSize:12,color:MUTED}}>{svc?.name||'Service'} · {reviewModal.booking_date}</div></div>
             </div>
             <div style={{marginBottom:16}}>
               <div style={{fontSize:13,fontWeight:600,color:DARK,marginBottom:10}}>How was your experience?</div>
@@ -1991,10 +1860,8 @@ export default function LuminBookClient() {
           </>);
         })()}
       </BottomSheet>
-      {/* Service Compare Modal */}
-      <BottomSheet open={!!serviceCompare} onClose={()=>setServiceCompare(null)} title={serviceCompare?`${serviceCompare.name} â€” Compare`:'Compare'}>
+      <BottomSheet open={!!serviceCompare} onClose={()=>setServiceCompare(null)} title={serviceCompare?`${serviceCompare.name} - Compare`:'Compare'}>
         {serviceCompare&&(()=>{
-          const thisBranch=branches.find(b=>b.id===serviceCompare.branch_id);
           const others=services.filter(s=>{
             if(s.id===serviceCompare.id) return false;
             const a=serviceCompare.name.toLowerCase(), b=s.name.toLowerCase();
@@ -2010,13 +1877,13 @@ export default function LuminBookClient() {
             <div style={{display:'grid',gap:10}}>
               {allMatches.map(s=>{const br=branches.find(b=>b.id===s.branch_id);const avg=branchAvgRating(s.branch_id);return(
                 <div key={s.id} style={{background:CARD,borderRadius:16,padding:14,border:`1px solid ${BORDER}`,display:'flex',gap:12,alignItems:'center'}}>
-                  {s.images?.[0]?<img src={s.images[0]} alt="" style={{width:56,height:56,borderRadius:12,objectFit:'cover',flexShrink:0}}/>:<div style={{width:56,height:56,borderRadius:12,background:`linear-gradient(135deg,${ACCENT}30,${ROSE}30)`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,flexShrink:0}}>âœ‚</div>}
+                  {s.images?.[0]?<img src={s.images[0]} alt="" style={{width:56,height:56,borderRadius:12,objectFit:'cover',flexShrink:0}}/>:<div style={{width:56,height:56,borderRadius:12,background:`linear-gradient(135deg,${ACCENT}30,${ROSE}30)`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,flexShrink:0}}>✂</div>}
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{fontSize:14,fontWeight:700}}>{br?.name||'Studio'}</div>
                     <div style={{display:'flex',alignItems:'center',gap:6,fontSize:12,color:MUTED,marginTop:2}}>
                       <span style={{display:'flex',alignItems:'center',gap:2}}><Icon name="star" size={11} color={GOLD}/>{avg}</span>
-                      <span>â€¢</span>
-                      <span>{s.duration}{s.duration_max&&s.duration_max!==s.duration?`â€“${s.duration_max}`:''} min</span>
+                      <span>•</span>
+                      <span>{s.duration}{s.duration_max&&s.duration_max!==s.duration?`–${s.duration_max}`:''} min</span>
                     </div>
                     <div style={{fontSize:16,fontWeight:700,color:ACCENT,marginTop:4}}>{fmtK(s.price)}</div>
                   </div>
