@@ -1002,7 +1002,7 @@ function BookingFlow({flow,setBookingFlow,staff,services,createBooking,goBack,bp
               </div>
               <div style={{display:'flex',gap:10}}>
                 <Btn variant="secondary" onClick={()=>update({step:2})}><Icon name="back" size={14} color={MUTED}/> Back</Btn>
-                <Btn variant="primary" full disabled={!!paymentState||!(flow.payerPhone ?? client?.phone)} onClick={()=>createBooking(flow)} style={{borderRadius:14,fontSize:16,boxShadow:`0 4px 20px ${ACCENT}40`}}>
+                <Btn variant="primary" full disabled={!!paymentState||isProcessingPayment.current||!(flow.payerPhone ?? client?.phone)} onClick={()=>createBooking(flow)} style={{borderRadius:14,fontSize:16,boxShadow:`0 4px 20px ${ACCENT}40`}}>
                   Pay {fmtK(deposit)} & Book
                 </Btn>
               </div>
@@ -2902,7 +2902,7 @@ function BookingFlow({flow,setBookingFlow,staff,services,createBooking,goBack,bp
               </div>
               <div style={{display:'flex',gap:10}}>
                 <Btn variant="secondary" onClick={()=>update({step:2})}><Icon name="back" size={14} color={MUTED}/> Back</Btn>
-                <Btn variant="primary" full disabled={!!paymentState||!(flow.payerPhone ?? client?.phone)} onClick={()=>createBooking(flow)} style={{borderRadius:14,fontSize:16,boxShadow:`0 4px 20px ${ACCENT}40`}}>
+                <Btn variant="primary" full disabled={!!paymentState||isProcessingPayment.current||!(flow.payerPhone ?? client?.phone)} onClick={()=>createBooking(flow)} style={{borderRadius:14,fontSize:16,boxShadow:`0 4px 20px ${ACCENT}40`}}>
                   Pay {fmtK(deposit)} & Book
                 </Btn>
               </div>
