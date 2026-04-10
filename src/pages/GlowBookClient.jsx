@@ -1653,9 +1653,9 @@ export default function LuminBookClient() {
         showToastFn('Please enter a valid Zambian phone number (e.g. 0971234567)', 'error');
         return;
       }
-      // Normalize to 260XXXXXXXXX format for payment API
-      if (cleanPhone.startsWith('+260')) cleanPhone = cleanPhone.slice(1);
-      else if (cleanPhone.startsWith('0')) cleanPhone = '260' + cleanPhone.slice(1);
+      // Normalize to 0XXXXXXXXX format (10 digits) for payment API
+      if (cleanPhone.startsWith('+260')) cleanPhone = '0' + cleanPhone.slice(4);
+      else if (cleanPhone.startsWith('260')) cleanPhone = '0' + cleanPhone.slice(3);
       setPaymentState({ step: 'initiating', message: 'Initiating payment...' });
       paymentPollAbort.current = false;
       try {
