@@ -1660,7 +1660,7 @@ export default function LuminBookClient() {
         const res = await fetch(SUPABASE_URL + '/functions/v1/process-payment', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (session?.access_token || ''), 'apikey': apiKey },
-          body: JSON.stringify({action:'initiate',branch_id:flow.branch.id,amount:deposit,payer_phone:payerPhone,payment_type:'booking_deposit',booking_intent:{branch_id:flow.branch.id,service_id:svc.id,staff_id:flow.staff?.id||null,booking_date:flow.date,booking_time:flow.time,duration:svc.duration_max||svc.duration||60,total_amount:parseFloat(svc.price)||0,client_notes:flow.clientNotes||null,recurring:flow.recurring||false,recurring_type:flow.recurringType||null,recurring_until:flow.recurringUntil||null}})
+          body: JSON.stringify({action:'initiate',branch_id:flow.branch.id,amount:deposit,payer_phone:cleanPhone,payment_type:'booking_deposit',booking_intent:{branch_id:flow.branch.id,service_id:svc.id,staff_id:flow.staff?.id||null,booking_date:flow.date,booking_time:flow.time,duration:svc.duration_max||svc.duration||60,total_amount:parseFloat(svc.price)||0,client_notes:flow.clientNotes||null,recurring:flow.recurring||false,recurring_type:flow.recurringType||null,recurring_until:flow.recurringUntil||null}})
         });
         const data = await res.json();
         if (data.error || !data.success) {
@@ -3560,7 +3560,7 @@ export default function LuminBookClient() {
         const res = await fetch(SUPABASE_URL + '/functions/v1/process-payment', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (session?.access_token || ''), 'apikey': apiKey },
-          body: JSON.stringify({action:'initiate',branch_id:flow.branch.id,amount:deposit,payer_phone:payerPhone,payment_type:'booking_deposit',booking_intent:{branch_id:flow.branch.id,service_id:svc.id,staff_id:flow.staff?.id||null,booking_date:flow.date,booking_time:flow.time,duration:svc.duration_max||svc.duration||60,total_amount:parseFloat(svc.price)||0,client_notes:flow.clientNotes||null,recurring:flow.recurring||false,recurring_type:flow.recurringType||null,recurring_until:flow.recurringUntil||null}})
+          body: JSON.stringify({action:'initiate',branch_id:flow.branch.id,amount:deposit,payer_phone:cleanPhone,payment_type:'booking_deposit',booking_intent:{branch_id:flow.branch.id,service_id:svc.id,staff_id:flow.staff?.id||null,booking_date:flow.date,booking_time:flow.time,duration:svc.duration_max||svc.duration||60,total_amount:parseFloat(svc.price)||0,client_notes:flow.clientNotes||null,recurring:flow.recurring||false,recurring_type:flow.recurringType||null,recurring_until:flow.recurringUntil||null}})
         });
         const data = await res.json();
         if (data.error || !data.success) {
