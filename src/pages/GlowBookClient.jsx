@@ -1659,7 +1659,10 @@ export default function LuminBookClient() {
       setPaymentState({ step: 'initiating', message: 'Initiating payment...' });
       paymentPollAbort.current = false;
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        // Refresh session to ensure a valid JWT before payment
+        const { data: { session: refreshedSession } } = await supabase.auth.refreshSession();
+        const session = refreshedSession || (await supabase.auth.getSession()).data.session;
+        if (!session?.access_token) { isProcessingPayment.current=false; showToastFn('Session expired. Please log in again.', 'error'); setPaymentState(null); return; }
         const apiKey = supabase.supabaseKey || '';
         const payloadBody = {action:'initiate',branch_id:flow.branch.id,amount:Math.round(deposit),payer_phone:cleanPhone,payment_type:'booking_deposit',booking_intent:{branch_id:flow.branch.id,service_id:svc.id,staff_id:flow.staff?.id||null,booking_date:flow.date,booking_time:flow.time,duration:svc.duration_max||svc.duration||60,total_amount:Math.round(parseFloat(svc.price)||0),client_notes:flow.clientNotes||null,recurring:flow.recurring||false,recurring_type:flow.recurringType||null,recurring_until:flow.recurringUntil||null}};
         console.log('[PAYMENT DEBUG] Request payload:', JSON.stringify(payloadBody, null, 2));
