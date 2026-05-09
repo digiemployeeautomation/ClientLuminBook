@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { Home, Search, Calendar, User, Star, Clock, MapPin, Phone, ArrowLeft, X, Check, Heart, Sparkles, Gift, ChevronRight, Scissors, Menu, Bell, LogOut, DollarSign, Share2, Copy, Lightbulb, CheckCircle2, XCircle, ClipboardList, AlarmClock, MessageCircle, ChevronDown, UserCircle, Mail, Smartphone, Send, Inbox, TrendingUp, Wallet, Shield } from 'lucide-react';
+import PaymentProviderPicker from '../components/PaymentProviderPicker.jsx';
+import AwaitingPaymentModal from '../components/AwaitingPaymentModal.jsx';
+import { generateUniqueReferenceCode } from '../lib/booking-reference.js';
 
 const ACCENT = '#c47d5a';
 const GOLD = '#c9a84c';
@@ -812,7 +815,7 @@ function SalonPage({branch,services,reviews,staff,branchAvgRating,navigate,goBac
   );
 }
 
-function BookingFlow({flow,setBookingFlow,staff,services,createBooking,goBack,bp,client,paymentState,setPaymentState,cancelPayment,isProcessingPayment}) {
+function BookingFlow({flow,setBookingFlow,staff,services,createBooking,handleProviderPicked,closeAwaiting,goBack,bp,client,paymentState,setPaymentState,isProcessingPayment}) {
   const [bookedSlots,setBookedSlots]=useState([]);
   const [blockedSlots,setBlockedSlots]=useState([]);
 
@@ -1011,72 +1014,32 @@ function BookingFlow({flow,setBookingFlow,staff,services,createBooking,goBack,bp
           </div>
         )}
       </div>
-      {paymentState && (
+      {paymentState?.step === 'picking' && (
+        <PaymentProviderPicker
+          amount={Math.round(paymentState.deposit)}
+          onPick={(provider) => handleProviderPicked(provider)}
+          onCancel={() => { isProcessingPayment.current = false; setPaymentState(null); }}
+        />
+      )}
+      {paymentState?.step === 'awaiting' && (
+        <AwaitingPaymentModal
+          amount={paymentState.amount}
+          provider={paymentState.provider}
+          paymentNumber={paymentState.paymentNumber}
+          referenceCode={paymentState.referenceCode}
+          onDone={closeAwaiting}
+        />
+      )}
+      {paymentState?.step === 'failed' && (
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center',padding:20,backdropFilter:'blur(4px)'}}>
           <div style={{background:CARD,borderRadius:24,padding:32,maxWidth:380,width:'100%',textAlign:'center',boxShadow:'0 20px 60px rgba(0,0,0,0.2)'}}>
-            {paymentState.step==='failed'?(
-              <>
-                <div style={{width:64,height:64,borderRadius:32,background:'#fce8e8',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px'}}><Icon name="close" size={28} color="#c62828"/></div>
-                <h3 style={{fontSize:18,fontWeight:700,fontFamily:'Fraunces,serif',marginBottom:8}}>
-                  {paymentState.isDuplicate ? 'Payment Already Pending' : 'Payment Failed'}
-                </h3>
-                <p style={{fontSize:14,color:MUTED,lineHeight:1.6,marginBottom:20}}>{paymentState.message}</p>
-                {paymentState.isDuplicate ? (
-                  <div style={{display:'flex',flexDirection:'column',gap:10}}>
-                    <Btn variant="primary" full onClick={()=>{setPaymentState(null)}}>Wait for Existing Payment</Btn>
-                    <Btn variant="secondary" full onClick={async()=>{
-                      if(paymentState.existingPaymentId){
-                        setPaymentState({step:'cancelling',message:'Cancelling previous payment...'});
-                        try{
-                          const sbUrl=supabase.supabaseUrl;
-                          const{data:{session}}=await supabase.auth.getSession();
-                          const apiKey=supabase.supabaseKey||'';
-                          await fetch(sbUrl+'/functions/v1/process-payment',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+(session?.access_token||''),'apikey':apiKey},body:JSON.stringify({action:'cancel',payment_id:paymentState.existingPaymentId})});
-                        }catch(e){console.warn('Cancel error:',e)}
-                        setPaymentState(null);
-                      }else{setPaymentState(null)}
-                    }}>Cancel Previous & Retry</Btn>
-                    <Btn variant="ghost" full onClick={()=>setPaymentState(null)}>Go Back</Btn>
-                  </div>
-                ) : (
-                  <div style={{display:'flex',gap:10}}>
-                    <Btn variant="secondary" full onClick={()=>setPaymentState(null)}>Go Back</Btn>
-                    <Btn variant="primary" full onClick={()=>{setPaymentState(null);createBooking(flow)}}>Try Again</Btn>
-                  </div>
-                )}
-              </>
-            ):paymentState.step==='success'?(
-              <>
-                <div style={{width:64,height:64,borderRadius:32,background:'#e8f5e9',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px'}}><Icon name="check" size={28} color="#2e7d32"/></div>
-                <h3 style={{fontSize:18,fontWeight:700,fontFamily:'Fraunces,serif',marginBottom:8}}>Payment Received!</h3>
-                <p style={{fontSize:14,color:MUTED}}>Creating your booking...</p>
-              </>
-            ):paymentState.step==='cancelling'?(
-              <>
-                <div style={{width:64,height:64,borderRadius:32,background:`${ACCENT}15`,display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px'}}>
-                  <div style={{width:32,height:32,border:`3px solid ${BORDER}`,borderTopColor:ACCENT,borderRadius:'50%',animation:'spin 1s linear infinite'}}/>
-                </div>
-                <h3 style={{fontSize:18,fontWeight:700,fontFamily:'Fraunces,serif',marginBottom:8}}>Cancelling Payment...</h3>
-                <p style={{fontSize:14,color:MUTED,lineHeight:1.6}}>Please wait while we cancel the payment.</p>
-              </>
-            ):(
-              <>
-                <div style={{width:64,height:64,borderRadius:32,background:`${ACCENT}15`,display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px'}}>
-                  <div style={{width:32,height:32,border:`3px solid ${BORDER}`,borderTopColor:ACCENT,borderRadius:'50%',animation:'spin 1s linear infinite'}}/>
-                </div>
-                <h3 style={{fontSize:18,fontWeight:700,fontFamily:'Fraunces,serif',marginBottom:8}}>
-                  {paymentState.step==='initiating'?'Initiating Payment...':'Waiting for Approval'}
-                </h3>
-                <p style={{fontSize:14,color:MUTED,lineHeight:1.6,marginBottom:6}}>{paymentState.message}</p>
-                {paymentState.step==='waiting'&&(
-                  <div style={{background:BG,borderRadius:12,padding:14,marginTop:12,border:`1px solid ${BORDER}`}}>
-                    <div style={{fontSize:12,fontWeight:600,color:DARK,marginBottom:4,display:'flex',alignItems:'center',gap:4}}><Icon name="smartphone" size={14} color={DARK}/> Check your phone</div>
-                    <div style={{fontSize:11,color:MUTED,lineHeight:1.5}}>A USSD prompt has been sent. Enter your PIN to approve the {fmtK(deposit)} deposit payment.</div>
-                  </div>
-                )}
-                <button onClick={cancelPayment} disabled={paymentState.step==='initiating'} style={{marginTop:16,background:'none',border:`1.5px solid #c6282840`,color:'#c62828',fontSize:13,cursor:paymentState.step==='initiating'?'not-allowed':'pointer',padding:'10px 24px',borderRadius:12,fontWeight:600,opacity:paymentState.step==='initiating'?0.4:1,transition:'all .15s'}}>Cancel Payment</button>
-              </>
-            )}
+            <div style={{width:64,height:64,borderRadius:32,background:'#fce8e8',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px'}}><Icon name="close" size={28} color="#c62828"/></div>
+            <h3 style={{fontSize:18,fontWeight:700,fontFamily:'Fraunces,serif',marginBottom:8}}>Something went wrong</h3>
+            <p style={{fontSize:14,color:MUTED,lineHeight:1.6,marginBottom:20}}>{paymentState.message}</p>
+            <div style={{display:'flex',gap:10}}>
+              <Btn variant="secondary" full onClick={()=>{ isProcessingPayment.current=false; setPaymentState(null); }}>Go Back</Btn>
+              <Btn variant="primary" full onClick={()=>{ setPaymentState(null); createBooking(flow); }}>Try Again</Btn>
+            </div>
           </div>
         </div>
       )}
@@ -1359,7 +1322,6 @@ export default function LuminBookClient() {
   const [bookingFlow,setBookingFlow] = useState(null);
   const [paymentState,setPaymentState] = useState(null);
   const isProcessingPayment = useRef(false);
-  const paymentPollAbort = useRef(false);
   const deepLinkHandled = useRef(false);
   const initialPath = useRef(window.location.pathname.replace(/^\/+|\/+$/g,'').toLowerCase());
   const [searchQuery,setSearchQuery] = useState('');
@@ -1522,7 +1484,27 @@ export default function LuminBookClient() {
       .on('postgres_changes',{event:'*',schema:'public',table:'bookings',filter:`client_id=eq.${client.id}`},async payload=>{
         if(payload.eventType==='UPDATE'){
           const b=payload.new;
-          if(b.status==='confirmed'){showToastFn('Booking confirmed!');pushNotif('Booking Confirmed',`Your appointment on ${fmtDate(b.booking_date)} at ${fmtTime(b.booking_time)} is confirmed!`,'success')}
+          if(b.status==='confirmed'){
+            // Manual-MoMo deposits set payment_provider; differentiate the
+            // language so the customer sees the deposit was received.
+            if(b.payment_provider && b.payment_status==='paid'){
+              showToastFn('Deposit received — booking confirmed! 🎉');
+              pushNotif('Booking Confirmed',`Your K${b.deposit_amount} deposit was received. Your appointment on ${fmtDate(b.booking_date)} at ${fmtTime(b.booking_time)} is on.`,'success');
+            } else {
+              showToastFn('Booking confirmed!');
+              pushNotif('Booking Confirmed',`Your appointment on ${fmtDate(b.booking_date)} at ${fmtTime(b.booking_time)} is confirmed!`,'success');
+            }
+          }
+          else if(b.status==='cancelled'&&b.payment_status==='expired'){
+            // pg_cron auto-expire — customer never paid in time.
+            showToastFn("Payment wasn't received in time","error");
+            pushNotif('Booking Cancelled',`Your booking on ${fmtDate(b.booking_date)} timed out without payment. You can try again anytime.`,'error');
+          }
+          else if(b.status==='cancelled'&&b.payment_provider&&!b.deposit_paid&&!b.cancelled_by){
+            // Admin clicked ❌ on Slack instead of approving.
+            showToastFn("Booking couldn't be confirmed",'error');
+            pushNotif('Booking Cancelled',`Payment for your booking on ${fmtDate(b.booking_date)} wasn't confirmed by the salon. You can try again or contact support.`,'error');
+          }
           else if(b.status==='cancelled'&&b.cancelled_by==='business'){showToastFn('Your booking was cancelled by the studio','error');pushNotif('Booking Cancelled',`Your appointment on ${fmtDate(b.booking_date)} was cancelled by the studio. If you paid a deposit, a refund will be processed manually.`,'error')}
           else if(b.status==='completed'){showToastFn('Booking complete! LuminPoints earned');pushNotif('Complete','Your appointment is done! LuminPoints have been added to your account. Leave a review for bonus points!','success')}
         }
@@ -1629,9 +1611,9 @@ export default function LuminBookClient() {
       }
     }
     const svc = flow.service;
-    // FIX: deposit_amount=0 means free — don't fall through to branch default
+    // deposit_amount=0 means free — don't fall through to branch default
     const deposit = svc?.deposit_amount != null ? parseFloat(svc.deposit_amount) : (parseFloat(flow.branch?.default_deposit) ?? 100);
-    const payerPhone = flow.payerPhone ?? client.phone ?? '';
+
     if(flow.staff?.id){
       const{data:ex}=await supabase.from('bookings').select('id').eq('staff_id',flow.staff.id).eq('booking_date',flow.date).eq('booking_time',flow.time).neq('status','cancelled').limit(1);
       if(ex?.length){isProcessingPayment.current=false;showToastFn('Slot just booked - pick another','error');return}
@@ -1645,98 +1627,123 @@ export default function LuminBookClient() {
       isProcessingPayment.current=false;
       if(!error){showToastFn('Rescheduled!');fetchMyData();setBookingFlow(null);setPage('bookings')}else showToastFn('Couldn\'t reschedule. Please try again.','error');return;
     }
-    if (deposit > 0) {
-      if (!payerPhone) { isProcessingPayment.current=false; showToastFn('Enter your mobile money number to pay', 'error'); return; }
-      let cleanPhone = payerPhone.replace(/[\s\-()]/g, '');
-      if (!/^(?:\+?260|0)[79]\d{8}$/.test(cleanPhone)) {
-        isProcessingPayment.current=false;
-        showToastFn('Please enter a valid Zambian phone number (e.g. 0971234567)', 'error');
-        return;
-      }
-      // Normalize to 0XXXXXXXXX format (10 digits) for payment API
-      if (cleanPhone.startsWith('+260')) cleanPhone = '0' + cleanPhone.slice(4);
-      else if (cleanPhone.startsWith('260')) cleanPhone = '0' + cleanPhone.slice(3);
-      setPaymentState({ step: 'initiating', message: 'Initiating payment...' });
-      paymentPollAbort.current = false;
-      try {
-        // Refresh session to ensure a valid JWT before payment
-        const { data: { session: refreshedSession } } = await supabase.auth.refreshSession();
-        const session = refreshedSession || (await supabase.auth.getSession()).data.session;
-        if (!session?.access_token) { isProcessingPayment.current=false; showToastFn('Session expired. Please log in again.', 'error'); setPaymentState(null); return; }
-        const apiKey = supabase.supabaseKey || '';
-        const payloadBody = {action:'initiate',branch_id:flow.branch.id,amount:Math.round(deposit),payer_phone:cleanPhone,payment_type:'booking_deposit',booking_intent:{branch_id:flow.branch.id,service_id:svc.id,staff_id:flow.staff?.id||null,booking_date:flow.date,booking_time:flow.time,duration:svc.duration_max||svc.duration||60,total_amount:Math.round(parseFloat(svc.price)||0),client_notes:flow.clientNotes||null,recurring:flow.recurring||false,recurring_type:flow.recurringType||null,recurring_until:flow.recurringUntil||null}};
-        console.log('[PAYMENT DEBUG] Request payload:', JSON.stringify(payloadBody, null, 2));
-        const res = await fetch(SUPABASE_URL + '/functions/v1/process-payment', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (session?.access_token || ''), 'apikey': apiKey },
-          body: JSON.stringify(payloadBody)
-        });
-        const data = await res.json();
-        console.log('[PAYMENT DEBUG] Response status:', res.status, 'data:', JSON.stringify(data, null, 2));
-        if (data.error || !data.success) {
-          isProcessingPayment.current = false;
-          const errMsg = (data.error || '').toLowerCase();
-          if (errMsg.includes('recently initiated') || errMsg.includes('pending') || errMsg.includes('duplicate')) {
-            setPaymentState({step:'failed',message:'You already have a payment in progress. Wait for it to complete, or cancel it and try again.',isDuplicate:true,existingPaymentId:data.payment_id||null});
-          } else {
-            setPaymentState({ step: 'failed', message: friendlyError(data.error) || 'Couldn\'t start the payment. Please try again.' });
-          }
-          return;
-        }
-        setPaymentState({ step: 'waiting', message: 'Approve the payment on your phone...', paymentId: data.payment_id });
-        const paymentId = data.payment_id;
-        let attempts = 0;
-        const maxAttempts = 24;
-        const pollVerify = async () => {
-          if (paymentPollAbort.current) return;
-          attempts++;
-          setPaymentState(ps => ({ ...ps, step: 'verifying', message: `Checking payment... (${attempts}/${maxAttempts})` }));
-          try {
-            const { data: { session: freshSession } } = await supabase.auth.getSession();
-            const freshApiKey = supabase.supabaseKey || '';
-            const vRes = await fetch(SUPABASE_URL + '/functions/v1/process-payment', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (freshSession?.access_token || ''), 'apikey': freshApiKey },
-              body: JSON.stringify({ action: 'verify', payment_id: paymentId })
-            });
-            const vData = await vRes.json();
-            if (vData.status === 'successful') {
-              setPaymentState({ step: 'success', message: 'Payment received! Creating booking...' });
-              if (!vData.booking_created && !vData.booking_id) {
-                await createBookingRecords(flow, svc, paymentId, deposit);
-              } else {
-                isProcessingPayment.current = false;
-                showToastFn('Booking confirmed! 🎉');
-                fetchMyData();setBookingFlow(null);setPage('bookings');setPaymentState(null);
-              }
-              return;
-            }
-            if (vData.status === 'failed') {
-              isProcessingPayment.current = false;
-              setPaymentState({ step: 'failed', message: vData.message || 'Payment was not approved. Please try again.' });
-              return;
-            }
-            if (attempts >= maxAttempts) {
-              isProcessingPayment.current = false;
-              setPaymentState({ step: 'failed', message: 'Payment timed out. No money was deducted - you can safely try again. If you were charged, please contact support.' });
-              return;
-            }
-            setPaymentState(ps => ({ ...ps, step: 'waiting', message: 'Approve the payment on your phone...' }));
-            setTimeout(pollVerify, 5000);
-          } catch (e) {
-            isProcessingPayment.current = false;
-            setPaymentState({ step: 'failed', message: 'Couldn\'t verify your payment. Please check your mobile money balance and try again.' });
-          }
-        };
-        setTimeout(pollVerify, 5000);
-      } catch (e) {
-        isProcessingPayment.current = false;
-        setPaymentState({ step: 'failed', message: e.message?.includes('fetch') || e.message?.includes('network') ? 'Connection error. Check your internet and try again.' : 'Something went wrong. Please try again.' });
-      }
-    } else {
+
+    // Free bookings go straight to confirmed via the legacy createBookingRecords path
+    if (deposit === 0) {
       await createBookingRecords(flow, svc, null, 0);
       isProcessingPayment.current = false;
+      return;
     }
+
+    // Paid bookings: show the provider picker. handleProviderPicked completes the flow.
+    setPaymentState({ step: 'picking', deposit, flow, svc });
+  };
+
+  // Step 2 of paid booking flow: customer picked MTN or Airtel.
+  // Insert a pending_payment booking, fire the Slack notification, and switch
+  // to the awaiting modal that shows the deposit number + reference code.
+  const handleProviderPicked = async (provider) => {
+    const ps = paymentState;
+    if (!ps || ps.step !== 'picking') return;
+    const { deposit, flow, svc } = ps;
+    if (!flow || !svc) return;
+
+    const paymentNumber = provider === 'mtn'
+      ? (import.meta.env.VITE_ADMIN_MTN_NUMBER || '0971234567')
+      : (import.meta.env.VITE_ADMIN_AIRTEL_NUMBER || '0971234567');
+
+    try {
+      const referenceCode = await generateUniqueReferenceCode(supabase);
+      const recurringId = flow.recurring ? crypto.randomUUID() : null;
+
+      const bookingRow = {
+        branch_id: flow.branch.id,
+        client_id: client.id,
+        service_id: svc.id,
+        staff_id: flow.staff?.id || null,
+        booking_date: flow.date,
+        booking_time: flow.time,
+        duration: svc.duration_max || svc.duration || 60,
+        total_amount: parseFloat(svc.price) || 0,
+        deposit_amount: Math.round(deposit),
+        deposit_paid: false,
+        deposit_paid_at: null,
+        payment_id: null,
+        payment_status: 'unpaid',
+        payment_provider: provider,
+        reference_code: referenceCode,
+        client_notes: flow.clientNotes || null,
+        status: 'pending_payment',
+        recurring: flow.recurring || false,
+        recurring_type: flow.recurringType || null,
+        recurring_until: flow.recurringUntil || null,
+        recurring_id: recurringId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      const { data: newBooking, error } = await supabase.from('bookings').insert(bookingRow).select().single();
+      if (error || !newBooking) {
+        isProcessingPayment.current = false;
+        setPaymentState({ step: 'failed', message: "Couldn't create the booking. Please try again." });
+        return;
+      }
+
+      // Notify admin via Slack — non-blocking; if it fails, the booking still
+      // exists and admin can see it in the dashboard / DB.
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        await fetch(SUPABASE_URL + '/functions/v1/slack-notify', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + (session?.access_token || ''),
+            'apikey': supabase.supabaseKey || '',
+          },
+          body: JSON.stringify({
+            event: 'booking_payment_pending',
+            data: {
+              booking_id: newBooking.id,
+              customer_name: client.name || 'Customer',
+              customer_phone: client.phone || '',
+              salon: flow.branch?.name || '',
+              service: svc.name || '',
+              slot: `${flow.date} ${flow.time}`,
+              amount: Math.round(deposit),
+              provider,
+              payment_number: paymentNumber,
+              reference_code: referenceCode,
+            },
+          }),
+        });
+      } catch (e) {
+        console.warn('slack-notify failed:', e.message);
+      }
+
+      setPaymentState({
+        step: 'awaiting',
+        amount: Math.round(deposit),
+        provider,
+        paymentNumber,
+        referenceCode,
+        bookingId: newBooking.id,
+      });
+    } catch (e) {
+      isProcessingPayment.current = false;
+      setPaymentState({ step: 'failed', message: e.message || 'Something went wrong. Please try again.' });
+    }
+  };
+
+  // Step 3: customer clicked "I've Sent It". The booking is already in
+  // pending_payment; we just dismiss the modal and return them to the
+  // bookings list. Realtime subscription will surface the confirmed state
+  // when admin approves on Slack (see Task 12).
+  const closeAwaiting = () => {
+    isProcessingPayment.current = false;
+    setPaymentState(null);
+    fetchMyData();
+    setBookingFlow(null);
+    setPage('bookings');
   };
 
   const createBookingRecords = async (flow, svc, paymentId, depositAmount) => {
@@ -1775,19 +1782,6 @@ export default function LuminBookClient() {
     setPaymentState(null);
   };
 
-  const cancelPayment = async () => {
-    paymentPollAbort.current = true;
-    const paymentId = paymentState?.paymentId;
-    if (!paymentId) { isProcessingPayment.current=false; setPaymentState(null); return; }
-    setPaymentState(ps => ({ ...ps, step: 'cancelling', message: 'Cancelling payment...' }));
-    try {
-      const{data:{session}}=await supabase.auth.getSession();
-      const apiKey=supabase.supabaseKey||'';
-      await fetch(SUPABASE_URL+'/functions/v1/process-payment',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+(session?.access_token||''),'apikey':apiKey},body:JSON.stringify({action:'cancel',payment_id:paymentId})});
-    } catch(e) { console.warn('Cancel payment fetch error:',e.message); }
-    isProcessingPayment.current=false;setPaymentState(null);
-  };
-
   const rescheduleBooking = (bk) => {
     const svc=getService(bk.service_id);const br=getBranch(bk.branch_id);const stf=getStaffMember(bk.staff_id);
     setBookingFlow({step:2,branch:br,service:svc,staff:stf||{id:null,name:'Any Available'},date:null,time:null,rescheduleId:bk.id});
@@ -1817,7 +1811,7 @@ export default function LuminBookClient() {
     home: <HomePage {...{branches,services,reviews,staff,branchAvgRating,branchReviews,categories,selectedCategory,setSelectedCategory,searchQuery,setSearchQuery,navigate,favorites,toggleFav,reminders,getService,getBranch,bp,onServiceCompare,bookings}}/>,
     explore: <ExplorePage {...{branches,services,reviews,branchAvgRating,branchReviews,navigate,searchQuery,setSearchQuery,selectedCategory,setSelectedCategory,categories,favorites,toggleFav,bp,onServiceCompare}}/>,
     salon: <SalonPage {...{branch:selectedBranch,services:services.filter(s=>s.branch_id===selectedBranch?.id),reviews:branchReviews(selectedBranch?.id),staff:branchStaff(selectedBranch?.id),branchAvgRating,navigate,goBack,favorites,toggleFav,client,bp,allServices:services,allBranches:branches,onServiceCompare,onReview,clientBookings,reviewedIds}}/>,
-    booking: <BookingFlow {...{flow:{...bookingFlow,clientId:client?.id},setBookingFlow,staff:branchStaff(bookingFlow?.branch?.id),services:services.filter(s=>s.branch_id===bookingFlow?.branch?.id),createBooking,goBack,bp,client,paymentState,setPaymentState,cancelPayment,isProcessingPayment}}/>,
+    booking: <BookingFlow {...{flow:{...bookingFlow,clientId:client?.id},setBookingFlow,staff:branchStaff(bookingFlow?.branch?.id),services:services.filter(s=>s.branch_id===bookingFlow?.branch?.id),createBooking,handleProviderPicked,closeAwaiting,goBack,bp,client,paymentState,setPaymentState,isProcessingPayment}}/>,
     bookings: <MyBookingsPage {...{upcoming:upcomingBookings,past:pastBookings,getService,getStaffMember,getBranch,cancelBooking,rescheduleBooking,navigate,bp,onReview,reviewedIds}}/>,
     profile: <ProfilePage {...{client,clientBookings,branches,favorites,getBranch,navigate,showToast:showToastFn,authUser,handleLogout,bp,onReview,reviewedIds,getService,refreshClient:fetchMyData}}/>,
   };
