@@ -1635,22 +1635,40 @@ export default function LuminBookClient() {
       return;
     }
 
-    // Paid bookings: show the provider picker. handleProviderPicked completes the flow.
-    setPaymentState({ step: 'picking', deposit, flow, svc });
+    // Paid bookings: which providers are configured?
+    const mtnNumber = import.meta.env.VITE_ADMIN_MTN_NUMBER || '';
+    const airtelNumber = import.meta.env.VITE_ADMIN_AIRTEL_NUMBER || '';
+    if (!mtnNumber && !airtelNumber) {
+      isProcessingPayment.current = false;
+      showToastFn("Payments aren't set up yet — please contact support.", 'error');
+      return;
+    }
+    if (mtnNumber && airtelNumber) {
+      // Both configured — show the picker.
+      setPaymentState({ step: 'picking', deposit, flow, svc });
+      return;
+    }
+    // Single provider — skip the picker and go straight to awaiting.
+    const onlyProvider = airtelNumber ? 'airtel' : 'mtn';
+    await handleProviderPicked(onlyProvider, { deposit, flow, svc });
   };
 
-  // Step 2 of paid booking flow: customer picked MTN or Airtel.
-  // Insert a pending_payment booking, fire the Slack notification, and switch
-  // to the awaiting modal that shows the deposit number + reference code.
-  const handleProviderPicked = async (provider) => {
-    const ps = paymentState;
-    if (!ps || ps.step !== 'picking') return;
-    const { deposit, flow, svc } = ps;
+  // Step 2 of paid booking flow: customer picked MTN or Airtel (or auto-picked
+  // because only one provider is configured). `ctx` is supplied in the
+  // single-provider path; otherwise the data is read from paymentState (the
+  // picker modal calls this without ctx).
+  const handleProviderPicked = async (provider, ctx) => {
+    const { deposit, flow, svc } = ctx || paymentState || {};
     if (!flow || !svc) return;
 
     const paymentNumber = provider === 'mtn'
-      ? (import.meta.env.VITE_ADMIN_MTN_NUMBER || '0971234567')
-      : (import.meta.env.VITE_ADMIN_AIRTEL_NUMBER || '0971234567');
+      ? import.meta.env.VITE_ADMIN_MTN_NUMBER
+      : import.meta.env.VITE_ADMIN_AIRTEL_NUMBER;
+    if (!paymentNumber) {
+      isProcessingPayment.current = false;
+      setPaymentState({ step: 'failed', message: `${provider === 'mtn' ? 'MTN' : 'Airtel'} payments aren't set up yet — please contact support.` });
+      return;
+    }
 
     try {
       const referenceCode = await generateUniqueReferenceCode(supabase);
