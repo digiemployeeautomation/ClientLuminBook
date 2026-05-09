@@ -380,10 +380,10 @@ function AuthScreen({onAuth}) {
   };
 
   const handleSignup=async()=>{
-    if(!email||!password||!name)return setError('Name, email & password required');
+    if(!email||!password||!name||!phone)return setError('Name, email, password & phone are required');
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return setError('Please enter a valid email address.');
     if(password.length<6)return setError('Password must be at least 6 characters.');
-    if(phone&&!isValidZambianPhone(phone))return setError('Please enter a valid Zambian phone number (e.g. 0971234567) or leave it blank.');
+    if(!isValidZambianPhone(phone))return setError('Please enter a valid Zambian phone number (e.g. 0971234567).');
     setSubmitting(true);setError('');
     const{data,error:err}=await supabase.auth.signUp({email,password,options:{data:{name,phone}}});
     setSubmitting(false);
@@ -451,7 +451,7 @@ function AuthScreen({onAuth}) {
             <h2 style={{fontFamily:'Fraunces,serif',fontSize:24,fontWeight:700,marginBottom:4}}>{mode==='login'?'Welcome back':'Create account'}</h2>
             <p style={{color:MUTED,fontSize:14,marginBottom:24}}>{mode==='login'?'Sign in to manage bookings':'Join LuminBook'}</p>
             {error&&<div style={{background:'#fce4ec',color:'#c62828',padding:'12px 16px',borderRadius:12,fontSize:13,fontWeight:500,marginBottom:16}}>{error}</div>}
-            {mode==='signup'&&<><input value={name} onChange={e=>setName(e.target.value)} placeholder="Full name" style={iStyle}/><input value={phone} onChange={e=>setPhone(e.target.value)} placeholder="Phone (optional)" style={iStyle}/></>}
+            {mode==='signup'&&<><input value={name} onChange={e=>setName(e.target.value)} placeholder="Full name" style={iStyle}/><input value={phone} onChange={e=>setPhone(e.target.value)} placeholder="Phone (e.g. 0971234567)" style={iStyle}/></>}
             <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email" type="email" style={iStyle}/>
             <input value={password} onChange={e=>setPassword(e.target.value)} placeholder="Password" type="password" style={iStyle} onKeyDown={e=>e.key==='Enter'&&(mode==='login'?handleLogin():handleSignup())}/>
             {mode==='signup'&&<input value={referralCode} onChange={e=>setReferralCode(e.target.value)} placeholder="Referral code (optional)" style={iStyle}/>}
